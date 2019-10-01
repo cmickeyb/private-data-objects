@@ -1,0 +1,11 @@
+{ "method" : "create"\, "key" : "abc"\, "value" : 5 }
+{ "method" : "inc_value"\,  "key" : "abc" }
+{ "method" : "inc_value"\,  "key" : "abc" }
+{ "method" : "inc_value"\,  "key" : "abc" }
+{ "method" : "get_value"\, "key" : "abc" }
+{ "method" : "create"\, "key" : "def"\, "value" : 50 }
+{ "method" : "inc_value"\,  "key" : "def" }
+{ "method" : "inc_value"\,  "key" : "def" }
+{ "method" : "inc_value"\,  "key" : "def" }
+{ "method" : "get_value"\, "key" : "def" }
+{ "method" : "sign_message"\, "message" : "hello there" }
