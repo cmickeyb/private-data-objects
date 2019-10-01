@@ -59,3 +59,4 @@ namespace pdo
 }
 
 extern pdo::contracts::ContractInterpreter* CreateGipsyInterpreter(void);
+extern pdo::contracts::ContractInterpreter* CreateWawakaInterpreter(void);

@@ -36,7 +36,13 @@ void ContractWorker::InitializeInterpreter(void)
     if (current_state_ == INTERPRETER_DONE)
     {
         if (interpreter_ == NULL) {
-            interpreter_ = new CreateGipsyInterpreter();
+#if USE_GIPSY_INTERPRETER == 1
+            interpreter_ = CreateGipsyInterpreter();
+#elif USE_WAWAKA_INTERPRETER == 1
+            interpreter_ = CreateWawakaInterpreter();
+#else
+#error No contract interpreter
+#endif
         } else {
             interpreter_->Initialize();
         }

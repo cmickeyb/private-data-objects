@@ -44,3 +44,4 @@ endif()
 ################################################################################
 
 ADD_SUBDIRECTORY (gipsy_scheme)
+ADD_SUBDIRECTORY (wawaka_wasm)
