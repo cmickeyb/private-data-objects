@@ -34,6 +34,7 @@ public:
     bool assign(const char* buffer);
     bool set(uint8_t v, size_t p);
     bool take(uint8_t* buffer, size_t size);
+    bool equal(const StringArray& sarray) const;
 
     const size_t size(void) const;
     uint8_t* data(void);

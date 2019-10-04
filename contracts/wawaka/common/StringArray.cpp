@@ -178,6 +178,15 @@ bool StringArray::take(uint8_t* buffer, size_t size)
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+bool StringArray::equal(const StringArray& sarray) const
+{
+    if (size_ != sarray.size_)
+        return false;
+
+    return (memcmp(value_, sarray.value_, size_) == 0);
+}
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const size_t StringArray::size(void) const
 {
     return size_;
