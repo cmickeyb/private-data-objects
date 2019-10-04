@@ -81,3 +81,33 @@ bool save_buffer(
 
     return true;
 }
+
+/* ----------------------------------------------------------------- *
+ * NAME: save_buffer
+ * ----------------------------------------------------------------- */
+bool save_buffer(
+    wasm_module_inst_t module_inst,
+    const ByteArray& source,
+    const int32 buffer_pointer_offset,
+    const int32 length_pointer_offset)
+{
+    return save_buffer(
+        module_inst,
+        (const char*)source.data(), source.size(),
+        buffer_pointer_offset, length_pointer_offset);
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: save_buffer
+ * ----------------------------------------------------------------- */
+bool save_buffer(
+    wasm_module_inst_t module_inst,
+    const std::string& source,
+    const int32 buffer_pointer_offset,
+    const int32 length_pointer_offset)
+{
+    return save_buffer(
+        module_inst,
+        source.c_str(), source.length(),
+        buffer_pointer_offset, length_pointer_offset);
+}

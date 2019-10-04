@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "types.h"
+
 #include "bh_platform.h"
 #include "wasm_export.h"
 #include "lib_export.h"
@@ -27,5 +29,17 @@ extern bool save_buffer(
     wasm_module_inst_t module_inst,
     const char* source_data,
     const uint32_t source_size,
+    const int32 buffer_pointer_offset,
+    const int32 length_pointer_offset);
+
+extern bool save_buffer(
+    wasm_module_inst_t module_inst,
+    const ByteArray& source,
+    const int32 buffer_pointer_offset,
+    const int32 length_pointer_offset);
+
+extern bool save_buffer(
+    wasm_module_inst_t module_inst,
+    const std::string& source,
     const int32 buffer_pointer_offset,
     const int32 length_pointer_offset);

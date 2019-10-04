@@ -40,7 +40,7 @@ namespace pe = pdo::error;
 /* ----------------------------------------------------------------- *
  * NAME: _contract_log_wrapper
  * ----------------------------------------------------------------- */
-static bool _contract_log_wrapper(
+extern "C" bool contract_log_wrapper(
     wasm_module_inst_t module_inst,
     const int32 loglevel,
     const int32 buffer_offset)
@@ -58,7 +58,7 @@ static bool _contract_log_wrapper(
         return true;
     }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed in contract_log");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
@@ -66,7 +66,7 @@ static bool _contract_log_wrapper(
 /* ----------------------------------------------------------------- *
  * NAME: simple_hash
  * ----------------------------------------------------------------- */
-static int _simple_hash_wrapper(
+extern "C" int simple_hash_wrapper(
     wasm_module_inst_t module_inst,
     int32 buffer_offset,
     const int32 buffer_length)
@@ -86,17 +86,16 @@ static int _simple_hash_wrapper(
 
         return result;
     }
-
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to compute simple hash");
-        return -1;
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
     }
 }
 
 /* ----------------------------------------------------------------- *
  * NAME: memchr
  * ----------------------------------------------------------------- */
-static int32 _memchr_wrapper(
+extern "C" int32 memchr_wrapper(
     wasm_module_inst_t module_inst,
     int32 src_offset,
     int32 ch,
@@ -116,17 +115,16 @@ static int32 _memchr_wrapper(
 
         return wasm_runtime_addr_native_to_app(module_inst, ptr);
     }
-
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "memchr failed");
-        return 0;
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
     }
 }
 
 /* ----------------------------------------------------------------- *
  * NAME: strtod
  * ----------------------------------------------------------------- */
-static double _strtod_wrapper(
+extern "C" double strtod_wrapper(
     wasm_module_inst_t module_inst,
     int32 src_offset,
     int32 endptr_offset)
@@ -155,8 +153,8 @@ static double _strtod_wrapper(
         return value;
     }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "strtod failed");
-        return 0;
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
     }
 }
 
@@ -165,39 +163,6 @@ static double _strtod_wrapper(
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static bool contract_log_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 loglevel,
-    const int32 buffer_offset)
-{
-    return _contract_log_wrapper(module_inst, loglevel, buffer_offset);
-}
-
-static int simple_hash_wrapper(
-    wasm_module_inst_t module_inst,
-    int32 buffer_offset,
-    const int32 buflen)
-{
-    return _simple_hash_wrapper(module_inst, buffer_offset, buflen);
-}
-
-static int32 memchr_wrapper(
-    wasm_module_inst_t module_inst,
-    int32 src_offset,
-    int32 ch,
-    uint32 size)
-{
-    return _memchr_wrapper(module_inst, src_offset, ch, size);
-}
-
-static double strtod_wrapper(
-    wasm_module_inst_t module_inst,
-    int32 src_offset,
-    int32 endptr_offset)
-{
-    return _strtod_wrapper(module_inst, src_offset, endptr_offset);
-}
 
 #define CPP_EXPORT_WASM_API(symbol)  {#symbol, (void*)symbol}
 #define CPP_EXPORT_WASM_API2(symbol) {#symbol, (void*)symbol##_wrapper}
@@ -237,20 +202,29 @@ static NativeSymbol extended_native_symbol_defs[] = {
 #if 0
     CPP_EXPORT_WASM_API2(isascii),
 #endif
+    CPP_EXPORT_WASM_API2(isblank),
+
     /* from WasmCryptoExtensions.h */
     CPP_EXPORT_WASM_API2(b64_encode),
     CPP_EXPORT_WASM_API2(b64_decode),
     CPP_EXPORT_WASM_API2(ecdsa_create_signing_keys),
     CPP_EXPORT_WASM_API2(ecdsa_sign_message),
     CPP_EXPORT_WASM_API2(ecdsa_verify_signature),
+    CPP_EXPORT_WASM_API2(aes_generate_key),
+    CPP_EXPORT_WASM_API2(aes_generate_iv),
+    CPP_EXPORT_WASM_API2(aes_encrypt_message),
+    CPP_EXPORT_WASM_API2(aes_decrypt_message),
+    CPP_EXPORT_WASM_API2(rsa_generate_keys),
+    CPP_EXPORT_WASM_API2(rsa_encrypt_message),
+    CPP_EXPORT_WASM_API2(rsa_decrypt_message),
     CPP_EXPORT_WASM_API2(crypto_hash),
+    CPP_EXPORT_WASM_API2(random_identifier),
 
     /* from WasmStateExtensions.h */
     CPP_EXPORT_WASM_API2(key_value_set),
     CPP_EXPORT_WASM_API2(key_value_get),
 
-    CPP_EXPORT_WASM_API2(isblank),
-
+    /* From WasmExtensions.cpp */
     CPP_EXPORT_WASM_API2(contract_log),
     CPP_EXPORT_WASM_API2(simple_hash),
     CPP_EXPORT_WASM_API2(memchr),

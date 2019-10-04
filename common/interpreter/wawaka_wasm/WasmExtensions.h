@@ -27,15 +27,13 @@ extern "C" {
 #include <stdio.h>
 
 // From WasmStateExtensions
-bool
-key_value_set(
+bool key_value_set(
     const uint8_t* key_buffer,
     const size_t key_buffer_length,
     const uint8_t* val_buffer,
     const size_t val_buffer_length);
 
-bool
-key_value_get(
+bool key_value_get(
     const uint8_t* key_buffer,
     const size_t key_buffer_length,
     uint8_t** val_buffer_pointer,
@@ -73,14 +71,70 @@ bool ecdsa_verify_signature(
     const size_t msg_length,
     const char* key_buffer,
     const size_t key_length,
-    uint8_t* sig_buffer,
-    size_t sig_length);
+    const uint8_t* sig_buffer,
+    const size_t sig_length);
+
+bool aes_generate_key(
+    uint8_t** buffer_pointer,
+    size_t* buffer_length_pointer);
+
+bool aes_generate_iv(
+    const uint8_t* buffer,
+    const size_t length,
+    uint8_t** iv_buffer_pointer,
+    size_t* iv_length_pointer);
+
+bool aes_encrypt_message(
+    const uint8_t* msg_buffer,
+    const size_t msg_length,
+    const uint8_t* key_buffer,
+    const size_t key_length,
+    const uint8_t* iv_buffer,
+    const size_t iv_length,
+    uint8_t** cipher_buffer_pointer,
+    size_t* cipher_length_pointer);
+
+bool aes_decrypt_message(
+    const uint8_t* cipher_buffer,
+    const size_t cipher_length,
+    const uint8_t* key_buffer,
+    const size_t key_length,
+    const uint8_t* iv_buffer,
+    const size_t iv_length,
+    uint8_t** msg_buffer_pointer,
+    size_t* msg_length_pointer);
+
+bool rsa_generate_keys(
+    char** private_buffer_pointer,
+    size_t* private_length_pointer,
+    char** public_buffer_pointer,
+    size_t* public_length_pointer);
+
+bool rsa_encrypt_message(
+    const uint8_t* msg_buffer,
+    const size_t msg_length,
+    const char* key_buffer,
+    const size_t key_length,
+    uint8_t** cipher_buffer_pointer,
+    size_t* cipher_length_pointer);
+
+bool rsa_decrypt_message(
+    const uint8_t* cipher_buffer,
+    const size_t cipher_length,
+    const char* key_buffer,
+    const size_t key_length,
+    uint8_t** msg_buffer_pointer,
+    size_t* msg_length_pointer);
 
 bool crypto_hash(
     const uint8_t* msg_buffer,
     const size_t msg_length,
     uint8_t** hash_buffer_pointer,
     size_t* hash_length_pointer);
+
+bool random_identifier(
+    const size_t length,
+    uint8_t* buffer_pointer);
 
 // From WasmExtensions
 bool contract_log(

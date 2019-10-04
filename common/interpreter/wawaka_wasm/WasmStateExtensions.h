@@ -20,24 +20,16 @@
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-bool key_value_set_wrapper(
+extern "C" bool key_value_set_wrapper(
     wasm_module_inst_t module_inst,
     const int32 key_buffer_offset,
     const int32 key_buffer_length,
     const int32 val_buffer_offset,
     const int32 val_buffer_length);
 
-bool key_value_get_wrapper(
+extern "C" bool key_value_get_wrapper(
     wasm_module_inst_t module_inst,
     const int32 key_buffer_offset,
     const int32 key_buffer_length,
     int32 val_buffer_pointer_offset,
     int32 val_length_pointer_offset);
-
-#ifdef __cplusplus
-}
-#endif

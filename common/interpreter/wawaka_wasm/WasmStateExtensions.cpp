@@ -40,12 +40,12 @@ namespace pstate = pdo::state;
 /* ----------------------------------------------------------------- *
  * NAME: _key_value_set_wrapper
  * ----------------------------------------------------------------- */
-static bool _key_value_set_wrapper(
+extern "C" bool key_value_set_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 key_buffer_offset,
-    const int32 key_buffer_length,
-    const int32 val_buffer_offset,
-    const int32 val_buffer_length)
+    const int32 key_buffer_offset, // uint8_t*
+    const int32 key_buffer_length, // size_t
+    const int32 val_buffer_offset, // uint8_t*
+    const int32 val_buffer_length) // size_t
 {
     try {
         pstate::Basic_KV_Plus* state = (pstate::Basic_KV_Plus*)wasm_runtime_get_instance_data(module_inst);
@@ -69,8 +69,12 @@ static bool _key_value_set_wrapper(
         state->UnprivilegedPut(ba_key, ba_val);
         return true;
     }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to save the key");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
@@ -78,12 +82,12 @@ static bool _key_value_set_wrapper(
 /* ----------------------------------------------------------------- *
  * NAME: _key_value_get_wrapper
  * ----------------------------------------------------------------- */
-static bool _key_value_get_wrapper(
+extern "C" bool key_value_get_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 key_buffer_offset,
-    const int32 key_buffer_length,
-    int32 val_buffer_pointer_offset,
-    int32 val_length_pointer_offset)
+    const int32 key_buffer_offset, // uint8_t*
+    const int32 key_buffer_length, // size_t
+    int32 val_buffer_pointer_offset, // uint8_t**
+    int32 val_length_pointer_offset) // size_t*
 {
     try {
         pstate::Basic_KV_Plus* state = (pstate::Basic_KV_Plus*)wasm_runtime_get_instance_data(module_inst);
@@ -110,48 +114,12 @@ static bool _key_value_get_wrapper(
 
         return true;
     }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to retrieve key value");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-bool key_value_set_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 key_buffer_offset,
-    const int32 key_buffer_length,
-    const int32 val_buffer_offset,
-    const int32 val_buffer_length)
-{
-    return _key_value_set_wrapper(
-        module_inst,
-        key_buffer_offset,
-        key_buffer_length,
-        val_buffer_offset,
-        val_buffer_length);
-}
-
-bool key_value_get_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 key_buffer_offset,
-    const int32 key_buffer_length,
-    int32 val_buffer_pointer_offset,
-    int32 val_length_pointer_offset)
-{
-    return _key_value_get_wrapper(
-        module_inst,
-        key_buffer_offset,
-        key_buffer_length,
-        val_buffer_pointer_offset,
-        val_length_pointer_offset);
-}
-
-#ifdef __cplusplus
-}
-#endif

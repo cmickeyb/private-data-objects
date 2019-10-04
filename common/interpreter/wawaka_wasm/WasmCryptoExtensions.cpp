@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <assert.h>
 #include <string>
 
 #include "bh_platform.h"
@@ -39,12 +40,13 @@ namespace pcrypto = pdo::crypto;
 /* ----------------------------------------------------------------- *
  * NAME: _b64_encode_wrapper
  * ----------------------------------------------------------------- */
-static bool _b64_encode_wrapper(
+extern "C" bool b64_encode_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 dec_buffer_offset,
-    const int32 dec_buffer_length,
-    int32 enc_buffer_pointer_offset,
-    int32 enc_length_pointer_offset)
+    const int32 dec_buffer_offset, // uint8_t*
+    const int32 dec_buffer_length, // size_t
+    int32 enc_buffer_pointer_offset, // char**
+    int32 enc_length_pointer_offset  // size_t*
+    )
 {
     try {
         uint8_t* dec_buffer = (uint8_t*)get_buffer(module_inst, dec_buffer_offset, dec_buffer_length);
@@ -55,15 +57,17 @@ static bool _b64_encode_wrapper(
         Base64EncodedString encoded = ByteArrayToBase64EncodedString(src);
         encoded += '\0';
 
-        if (! save_buffer(module_inst,
-                          encoded.c_str(), encoded.length(),
-                          enc_buffer_pointer_offset, enc_length_pointer_offset))
+        if (! save_buffer(module_inst, encoded, enc_buffer_pointer_offset, enc_length_pointer_offset))
             return false;
 
         return true;
     }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to compute b64 encoding");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
@@ -71,12 +75,13 @@ static bool _b64_encode_wrapper(
 /* ----------------------------------------------------------------- *
  * NAME: _b64_decode_wrapper
  * ----------------------------------------------------------------- */
-static bool _b64_decode_wrapper(
+extern "C" bool b64_decode_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 enc_buffer_offset,
-    const int32 enc_buffer_length,
-    int32 dec_buffer_pointer_offset,
-    int32 dec_length_pointer_offset)
+    const int32 enc_buffer_offset, // char*
+    const int32 enc_buffer_length, // size_t
+    int32 dec_buffer_pointer_offset, // uint8_t**
+    int32 dec_length_pointer_offset  // size_t*
+    )
 {
     try {
         uint8_t* enc_buffer = (uint8_t*)get_buffer(module_inst, enc_buffer_offset, enc_buffer_length);
@@ -88,15 +93,17 @@ static bool _b64_decode_wrapper(
         if (decoded.size() == 0)
             return false;
 
-        if (! save_buffer(module_inst,
-                          (const char*)decoded.data(), decoded.size(),
-                          dec_buffer_pointer_offset, dec_length_pointer_offset))
+        if (! save_buffer(module_inst, decoded, dec_buffer_pointer_offset, dec_length_pointer_offset))
             return false;
 
         return true;
     }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to compute b64 encoding");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
@@ -104,12 +111,13 @@ static bool _b64_decode_wrapper(
 /* ----------------------------------------------------------------- *
  * NAME: _ecdsa_create_signing_keys
  * ----------------------------------------------------------------- */
-static bool _ecdsa_create_signing_keys_wrapper(
+extern "C" bool ecdsa_create_signing_keys_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 private_buffer_pointer_offset,
-    const int32 private_length_pointer_offset,
-    const int32 public_buffer_pointer_offset,
-    const int32 public_length_pointer_offset)
+    int32 private_buffer_pointer_offset, // char**
+    int32 private_length_pointer_offset, // size_t*
+    int32 public_buffer_pointer_offset,  // char**
+    int32 public_length_pointer_offset   // size_t*
+    )
 {
     try {
         pcrypto::sig::PrivateKey privkey;
@@ -122,20 +130,20 @@ static bool _ecdsa_create_signing_keys_wrapper(
         std::string encpub = pubkey.Serialize();
         encpub += '\0';         // add a null terminator since this is a char*
 
-        if (! save_buffer(module_inst,
-                          encpriv.c_str(), encpriv.length(),
-                          private_buffer_pointer_offset, private_length_pointer_offset))
+        if (! save_buffer(module_inst, encpriv, private_buffer_pointer_offset, private_length_pointer_offset))
             return false;
 
-        if (! save_buffer(module_inst,
-                          encpub.c_str(), encpub.length(),
-                          public_buffer_pointer_offset, public_length_pointer_offset))
+        if (! save_buffer(module_inst, encpub, public_buffer_pointer_offset, public_length_pointer_offset))
             return false;
 
         return true;
     }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to generate ecdsa key");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
@@ -143,14 +151,15 @@ static bool _ecdsa_create_signing_keys_wrapper(
 /* ----------------------------------------------------------------- *
  * NAME: _ecdsa_sign_message_wrapper
  * ----------------------------------------------------------------- */
-static bool _ecdsa_sign_message_wrapper(
+extern "C" bool ecdsa_sign_message_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 msg_buffer_offset,
-    const int32 msg_length,
-    const int32 key_buffer_offset,
-    const int32 key_length,
-    int32 sig_buffer_pointer_offset,
-    int32 sig_length_pointer_offset)
+    const int32 msg_buffer_offset, // uint8_t*
+    const int32 msg_length,        // size_t
+    const int32 key_buffer_offset, // char*
+    const int32 key_length,        // size_t
+    int32 sig_buffer_pointer_offset, // uint8_t**
+    int32 sig_length_pointer_offset  // size_t*
+    )
 {
     try {
         const uint8_t* msg_buffer = (uint8_t*)get_buffer(module_inst, msg_buffer_offset, msg_length);
@@ -167,19 +176,17 @@ static bool _ecdsa_sign_message_wrapper(
         pcrypto::sig::PrivateKey privkey(key);
         ByteArray signature = privkey.SignMessage(msg);
 
-        if (! save_buffer(module_inst,
-                          (const char*)signature.data(), signature.size(),
-                          sig_buffer_pointer_offset, sig_length_pointer_offset))
+        if (! save_buffer(module_inst, signature, sig_buffer_pointer_offset, sig_length_pointer_offset))
             return false;
 
         return true;
     }
     catch (pdo::error::Error& e) {
-        SAFE_LOG(PDO_LOG_ERROR, "_ecdsa_sign_message_wrapper failed; %s", e.what());
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
         return false;
     }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "_ecdsa_sign_message_wrapper failed");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
@@ -187,14 +194,15 @@ static bool _ecdsa_sign_message_wrapper(
 /* ----------------------------------------------------------------- *
  * NAME: _ecdsa_verify_signature_wrapper
  * ----------------------------------------------------------------- */
-bool _ecdsa_verify_signature_wrapper(
+extern "C" bool ecdsa_verify_signature_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 msg_buffer_offset,
-    const int32 msg_length,
-    const int32 key_buffer_offset,
-    const int32 key_length,
-    const int32 sig_buffer_offset,
-    const int32 sig_length)
+    const int32 msg_buffer_offset, // uint8_t*
+    const int32 msg_length,        // size_t
+    const int32 key_buffer_offset, // char*
+    const int32 key_length,        // size_t
+    const int32 sig_buffer_offset, // uint8_t*
+    const int32 sig_length         // size_t
+    )
 {
     try {
         const uint8_t* msg_buffer = (uint8_t*)get_buffer(module_inst, msg_buffer_offset, msg_length);
@@ -217,24 +225,316 @@ bool _ecdsa_verify_signature_wrapper(
         return pubkey.VerifySignature(msg, signature);
     }
     catch (pdo::error::Error& e) {
-        SAFE_LOG(PDO_LOG_ERROR, "_ecdsa_verify_signature_wrapper failed; %s", e.what());
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
         return false;
     }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "_ecdsa_verify_signature_wrapper failed");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
 
 /* ----------------------------------------------------------------- *
- * NAME: _crypto_hash
+ * NAME: aes_generate_key_wrapper
  * ----------------------------------------------------------------- */
-static bool _crypto_hash_wrapper(
+extern "C" bool aes_generate_key_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 msg_buffer_offset,
-    const int32 msg_buffer_length,
-    int32 hash_buffer_pointer_offset,
-    int32 hash_length_pointer_offset)
+    int32 key_buffer_pointer_offset, // uint8_t**
+    int32 key_length_pointer_offset  // size_t*
+    )
+{
+    try {
+        ByteArray key = pcrypto::skenc::GenerateKey();
+
+        if (! save_buffer(module_inst, key, key_buffer_pointer_offset, key_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: aes_generate_iv_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool aes_generate_iv_wrapper(
+    wasm_module_inst_t module_inst,
+    const int32 buffer_offset,  // uint8_t*
+    const int32 buffer_length,  // size_t
+    int32 iv_buffer_pointer_offset, // uint8_t**
+    int32 iv_length_pointer_offset  // size_t*
+    )
+{
+    try {
+        const uint8_t* buffer = (uint8_t*)get_buffer(module_inst, buffer_offset, buffer_length);
+        if (buffer == NULL)
+            return false;
+
+        ByteArray iv = pcrypto::skenc::GenerateIV((const char*)buffer);
+
+        if (! save_buffer(module_inst, iv, iv_buffer_pointer_offset, iv_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: aes_encrypt_message_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool aes_encrypt_message_wrapper(
+    wasm_module_inst_t module_inst,
+    const int32 msg_buffer_offset, // uint8_t*
+    const int32 msg_length,        // size_t
+    const int32 key_buffer_offset, // uint8_t*
+    const int32 key_length,        // size_t
+    const int32 iv_buffer_offset,  // uint8_t*
+    const int32 iv_length,         // size_t
+    int32 cipher_buffer_pointer_offset, // uint8_t**
+    int32 cipher_length_pointer_offset  // size_t*
+    )
+{
+    try {
+        uint8_t* msg_buffer = (uint8_t*)get_buffer(module_inst, msg_buffer_offset, msg_length);
+        if (msg_buffer == NULL)
+            return false;
+        ByteArray msg(msg_buffer, msg_buffer + msg_length);
+
+        uint8_t* key_buffer = (uint8_t*)get_buffer(module_inst, key_buffer_offset, key_length);
+        if (key_buffer == NULL)
+            return false;
+        ByteArray key(key_buffer, key_buffer + key_length);
+
+        uint8_t* iv_buffer = (uint8_t*)get_buffer(module_inst, iv_buffer_offset, iv_length);
+        if (iv_buffer == NULL)
+            return false;
+        ByteArray iv(iv_buffer, iv_buffer + iv_length);
+
+        ByteArray cipher = pcrypto::skenc::EncryptMessage(key, iv, msg);
+        if (cipher.empty())
+            return false;
+
+        if (! save_buffer(module_inst, cipher, cipher_buffer_pointer_offset, cipher_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: aes_decrypt_message_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool aes_decrypt_message_wrapper(
+    wasm_module_inst_t module_inst,
+    const int32 cipher_buffer_offset, // uint8_t*
+    const int32 cipher_length,        // size_t
+    const int32 key_buffer_offset,    // uint8_t*
+    const int32 key_length,           // size_t
+    const int32 iv_buffer_offset,     // uint8_t*
+    const int32 iv_length,            // size_t
+    int32 msg_buffer_pointer_offset,  // uint8_t**
+    int32 msg_length_pointer_offset   // size_t*
+    )
+{
+    try {
+        uint8_t* cipher_buffer = (uint8_t*)get_buffer(module_inst, cipher_buffer_offset, cipher_length);
+        if (cipher_buffer == NULL)
+            return false;
+        ByteArray cipher(cipher_buffer, cipher_buffer + cipher_length);
+
+        uint8_t* key_buffer = (uint8_t*)get_buffer(module_inst, key_buffer_offset, key_length);
+        if (key_buffer == NULL)
+            return false;
+        ByteArray key(key_buffer, key_buffer + key_length);
+
+        uint8_t* iv_buffer = (uint8_t*)get_buffer(module_inst, iv_buffer_offset, iv_length);
+        if (iv_buffer == NULL)
+            return false;
+        ByteArray iv(iv_buffer, iv_buffer + iv_length);
+
+        ByteArray msg = pcrypto::skenc::DecryptMessage(key, iv, cipher);
+        if (msg.empty())
+            return false;
+
+        if (! save_buffer(module_inst, msg, msg_buffer_pointer_offset, msg_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: rsa_generate_keys_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool rsa_generate_keys_wrapper(
+    wasm_module_inst_t module_inst,
+    int32 private_buffer_pointer_offset, // char**
+    int32 private_length_pointer_offset, // size_t*
+    int32 public_buffer_pointer_offset,  // char**
+    int32 public_length_pointer_offset   // size_t*
+    )
+{
+    try {
+        pcrypto::pkenc::PrivateKey privkey;
+        privkey.Generate();
+        pcrypto::pkenc::PublicKey pubkey(privkey);
+
+        std::string encpriv = privkey.Serialize();
+        encpriv += '\0';
+
+        std::string encpub = pubkey.Serialize();
+        encpub += '\0';
+
+        if (! save_buffer(module_inst, encpriv, private_buffer_pointer_offset, private_length_pointer_offset))
+            return false;
+
+        if (! save_buffer(module_inst, encpub, public_buffer_pointer_offset, public_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: rsa_encrypt_message_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool rsa_encrypt_message_wrapper(
+    wasm_module_inst_t module_inst,
+    const int32 msg_buffer_offset, // uint8_t*
+    const int32 msg_length,        // size_t
+    const int32 key_buffer_offset, // char*
+    const int32 key_length,        // size_t
+    int32 cipher_buffer_pointer_offset, // uint8_t**
+    int32 cipher_length_pointer_offset  // size_t*
+    )
+{
+    try {
+        uint8_t* msg_buffer = (uint8_t*)get_buffer(module_inst, msg_buffer_offset, msg_length);
+        if (msg_buffer == NULL)
+            return false;
+        ByteArray msg(msg_buffer, msg_buffer + msg_length);
+
+        char* key_buffer = (char*)get_buffer(module_inst, key_buffer_offset, key_length);
+        if (key_buffer == NULL)
+            return false;
+        std::string key(key_buffer, key_length);
+
+        pcrypto::pkenc::PublicKey public_key;
+        public_key.Deserialize(key);
+
+        ByteArray cipher = public_key.EncryptMessage(msg);
+        if (cipher.empty())
+            return false;
+
+        if (! save_buffer(module_inst, cipher, cipher_buffer_pointer_offset, cipher_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: rsa_decrypt_message_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool rsa_decrypt_message_wrapper(
+    wasm_module_inst_t module_inst,
+    const int32 cipher_buffer_offset, // uint8_t*
+    const int32 cipher_length,        // size_t
+    const int32 key_buffer_offset,    // char*
+    const int32 key_length,           // size_t
+    int32 msg_buffer_pointer_offset,  // uint8_t**
+    int32 msg_length_pointer_offset   // size_t*
+    )
+{
+    try {
+        uint8_t* cipher_buffer = (uint8_t*)get_buffer(module_inst, cipher_buffer_offset, cipher_length);
+        if (cipher_buffer == NULL)
+            return false;
+        ByteArray cipher(cipher_buffer, cipher_buffer + cipher_length);
+
+        char* key_buffer = (char*)get_buffer(module_inst, key_buffer_offset, key_length);
+        if (key_buffer == NULL)
+            return false;
+        std::string key(key_buffer, key_length);
+
+        pcrypto::pkenc::PrivateKey private_key;
+        private_key.Deserialize(key);
+
+        ByteArray msg = private_key.DecryptMessage(cipher);
+        if (msg.empty())
+            return false;
+
+        if (! save_buffer(module_inst, msg, msg_buffer_pointer_offset, msg_length_pointer_offset))
+            return false;
+
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: crypto_hash_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool crypto_hash_wrapper(
+    wasm_module_inst_t module_inst,
+    const int32 msg_buffer_offset, // uint8_t*
+    const int32 msg_buffer_length, // size_t
+    int32 hash_buffer_pointer_offset, // uint8_t**
+    int32 hash_length_pointer_offset) // size_t*
 {
     try {
         uint8_t* msg_buffer = (uint8_t*)get_buffer(module_inst, msg_buffer_offset, msg_buffer_length);
@@ -246,123 +546,51 @@ static bool _crypto_hash_wrapper(
         if (hash.size() == 0)
             return false;
 
-        if (! save_buffer(module_inst,
-                          (const char*)hash.data(), hash.size(),
-                          hash_buffer_pointer_offset, hash_length_pointer_offset))
+        if (! save_buffer(module_inst, hash, hash_buffer_pointer_offset, hash_length_pointer_offset))
             return false;
 
         return true;
     }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
     catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "failed to compute cryptographic hash");
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
 }
 
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-bool b64_encode_wrapper(
+/* ----------------------------------------------------------------- *
+ * NAME: _random_identifier_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" bool random_identifier_wrapper(
     wasm_module_inst_t module_inst,
-    const int32 dec_buffer_offset,
-    const int32 dec_buffer_length,
-    int32 enc_buffer_pointer_offset,
-    int32 enc_length_pointer_offset)
+    const int32 length,         // size_t
+    int32 buffer_offset         // uint8_t*
+    )
 {
-    return _b64_encode_wrapper(
-        module_inst,
-        dec_buffer_offset,
-        dec_buffer_length,
-        enc_buffer_pointer_offset,
-        enc_length_pointer_offset);
-}
+    if (length <= 0)
+        return false;
 
-bool b64_decode_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 enc_buffer_offset,
-    const int32 enc_buffer_length,
-    int32 dec_buffer_pointer_offset,
-    int32 dec_length_pointer_offset)
-{
-    return _b64_decode_wrapper(
-        module_inst,
-        enc_buffer_offset,
-        enc_buffer_length,
-        dec_buffer_pointer_offset,
-        dec_length_pointer_offset);
-}
+    try {
+        ByteArray identifier = pcrypto::RandomBitString(length);
+        assert(length == identifier.size());
 
-bool ecdsa_create_signing_keys_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 private_buffer_pointer_offset,
-    const int32 private_length_pointer_offset,
-    const int32 public_buffer_pointer_offset,
-    const int32 public_length_pointer_offset)
-{
-    return _ecdsa_create_signing_keys_wrapper(
-        module_inst,
-        private_buffer_pointer_offset,
-        private_length_pointer_offset,
-        public_buffer_pointer_offset,
-        public_length_pointer_offset);
-}
+        uint8_t* buffer = (uint8_t*)get_buffer(module_inst, buffer_offset, length);
+        if (buffer == NULL)
+            return false;
 
-bool ecdsa_sign_message_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 msg_buffer_offset,
-    const int32 msg_length,
-    const int32 key_buffer_offset,
-    const int32 key_length,
-    int32 sig_buffer_pointer_offset,
-    int32 sig_length_pointer_offset)
-{
-    return  _ecdsa_sign_message_wrapper(
-        module_inst,
-        msg_buffer_offset,
-        msg_length,
-        key_buffer_offset,
-        key_length,
-        sig_buffer_pointer_offset,
-        sig_length_pointer_offset);
-}
+        memcpy(buffer, identifier.data(), length);
 
-bool ecdsa_verify_signature_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 msg_buffer_offset,
-    const int32 msg_length,
-    const int32 key_buffer_offset,
-    const int32 key_length,
-    const int32 sig_buffer_offset,
-    const int32 sig_length)
-{
-    return _ecdsa_verify_signature_wrapper(
-        module_inst,
-        msg_buffer_offset,
-        msg_length,
-        key_buffer_offset,
-        key_length,
-        sig_buffer_offset,
-        sig_length);
+        return true;
+    }
+    catch (pdo::error::Error& e) {
+        SAFE_LOG(PDO_LOG_ERROR, "failure in %s; %s", __FUNCTION__, e.what());
+        return false;
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return false;
+    }
 }
-
-bool crypto_hash_wrapper(
-    wasm_module_inst_t module_inst,
-    const int32 msg_buffer_offset,
-    const int32 msg_buffer_length,
-    int32 hash_buffer_pointer_offset,
-    int32 hash_length_pointer_offset)
-{
-    return _crypto_hash_wrapper(
-        module_inst,
-        msg_buffer_offset,
-        msg_buffer_length,
-        hash_buffer_pointer_offset,
-        hash_length_pointer_offset);
-}
-
-#ifdef __cplusplus
-}
-#endif
