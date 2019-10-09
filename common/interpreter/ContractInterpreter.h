@@ -54,14 +54,9 @@ namespace pdo
             virtual void Finalize(void) = 0;
             virtual void Initialize(void) = 0;
         };
+
+        extern std::string GetInterpreterIdentity(void);
+        extern pdo::contracts::ContractInterpreter* CreateInterpreter(void);
     }
 
 }
-
-#if defined(USE_GIPSY_INTERPRETER)
-extern pdo::contracts::ContractInterpreter* CreateGipsyInterpreter(void);
-#elif defined(USE_WAWAKA_INTERPRETER)
-extern pdo::contracts::ContractInterpreter* CreateWawakaInterpreter(void);
-#else
-#error No contract interpreter
-#endif

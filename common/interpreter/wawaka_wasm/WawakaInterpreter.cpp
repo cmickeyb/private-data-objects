@@ -38,7 +38,14 @@ namespace pstate = pdo::state;
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-pc::ContractInterpreter* CreateWawakaInterpreter(void)
+const std::string WawakaInterpreter::identity_ = "wawaka";
+
+std::string pdo::contracts::GetInterpreterIdentity(void)
+{
+    return WawakaInterpreter::identity_;
+}
+
+pc::ContractInterpreter* pdo::contracts::CreateInterpreter(void)
 {
     return new WawakaInterpreter();
 }
