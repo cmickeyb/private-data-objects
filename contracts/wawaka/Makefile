@@ -50,7 +50,7 @@ install : $(CONTRACT_TARGETS)
 	base64 -w 0 $< > $@
 
 mock-contract.wasm : ${MOCK_CONTRACT_SOURCES} ${COMMON_PACKAGE_SOURCES}
-	emcc -g -O3 ${LIBRARY_SOURCES} ${COMMON_PACKAGE_SOURCES} ${MOCK_CONTRACT_SOURCES} \
+	em++ -g -O3 ${LIBRARY_SOURCES} ${COMMON_PACKAGE_SOURCES} ${MOCK_CONTRACT_SOURCES} \
 		-o mock-contract.wasm \
 		${PACKAGE_INCLUDES} \
 		-I${WASM_SRC}/core/iwasm/lib/native-interface \
@@ -60,7 +60,7 @@ mock-contract.wasm : ${MOCK_CONTRACT_SOURCES} ${COMMON_PACKAGE_SOURCES}
 		-s "EXPORTED_FUNCTIONS=${CONTRACT_EXPORTS}"
 
 test-contract.wasm : ${TEST_CONTRACT_SOURCES} ${COMMON_PACKAGE_SOURCES}
-	emcc -g -O3 ${LIBRARY_SOURCES} ${COMMON_PACKAGE_SOURCES} ${TEST_CONTRACT_SOURCES} \
+	em++ -g -O3 ${LIBRARY_SOURCES} ${COMMON_PACKAGE_SOURCES} ${TEST_CONTRACT_SOURCES} \
 		-o test-contract.wasm \
 		${PACKAGE_INCLUDES} \
 		-I${WASM_SRC}/core/iwasm/lib/native-interface \

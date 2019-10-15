@@ -45,7 +45,7 @@ std::string pdo::contracts::GetInterpreterIdentity(void)
     return WawakaInterpreter::identity_;
 }
 
-pc::ContractInterpreter* pdo::contracts::CreateInterpreter(void)
+pc::ContractInterpreter* CreateInterpreter(void)
 {
     return new WawakaInterpreter();
 }
@@ -310,7 +310,7 @@ void WawakaInterpreter::create_initial_contract_state(
     // this doesn't really set thread local data since it is
     // not supported for sgx, it does however attach the data
     // to the module so we can use it in the extensions
-    wasm_runtime_set_instance_data(wasm_module_inst, (void*)&inoutContractState);
+    wasm_runtime_set_custom_data(wasm_module_inst, (void*)&inoutContractState);
 
     // serialize the environment parameter for the method
     std::string env;
@@ -325,7 +325,7 @@ void WawakaInterpreter::create_initial_contract_state(
     parse_result_string(result_app, outMessageResult, outStateChangedFlag);
 
     // this should be in finally... later...
-    wasm_runtime_set_instance_data(wasm_module_inst, NULL);
+    wasm_runtime_set_custom_data(wasm_module_inst, NULL);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -349,7 +349,7 @@ void WawakaInterpreter::send_message_to_contract(
     // this doesn't really set thread local data since it is
     // not supported for sgx, it does however attach the data
     // to the module so we can use it in the extensions
-    wasm_runtime_set_instance_data(wasm_module_inst, (void*)&inoutContractState);
+    wasm_runtime_set_custom_data(wasm_module_inst, (void*)&inoutContractState);
 
     // serialize the environment parameter for the method
     std::string env;
@@ -359,10 +359,10 @@ void WawakaInterpreter::send_message_to_contract(
     parse_result_string(result_app, outMessageResult, outStateChangedFlag);
 
     // this should be in finally... later...
-    wasm_runtime_set_instance_data(wasm_module_inst, NULL);
+    wasm_runtime_set_custom_data(wasm_module_inst, NULL);
 }
 
-// syntax of the resposne expected from the contract method
+// syntax of the response expected from the contract method
 // {
 //     "Status" : bool,
 //     "StateChanged" : bool,

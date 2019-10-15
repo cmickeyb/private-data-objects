@@ -48,7 +48,7 @@ extern "C" bool key_value_set_wrapper(
     const int32 val_buffer_length) // size_t
 {
     try {
-        pstate::Basic_KV_Plus* state = (pstate::Basic_KV_Plus*)wasm_runtime_get_instance_data(module_inst);
+        pstate::Basic_KV_Plus* state = (pstate::Basic_KV_Plus*)wasm_runtime_get_custom_data(module_inst);
         if (state == NULL)
         {
             SAFE_LOG(PDO_LOG_ERROR, "state was not initialized");
@@ -90,7 +90,7 @@ extern "C" bool key_value_get_wrapper(
     int32 val_length_pointer_offset) // size_t*
 {
     try {
-        pstate::Basic_KV_Plus* state = (pstate::Basic_KV_Plus*)wasm_runtime_get_instance_data(module_inst);
+        pstate::Basic_KV_Plus* state = (pstate::Basic_KV_Plus*)wasm_runtime_get_custom_data(module_inst);
         if (state == NULL)
         {
             SAFE_LOG(PDO_LOG_ERROR, "state was not initialized");
