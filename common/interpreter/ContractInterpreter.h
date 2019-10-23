@@ -55,8 +55,8 @@ namespace pdo
             virtual void Initialize(void) = 0;
         };
 
-        extern std::string GetInterpreterIdentity(void);
-        extern pdo::contracts::ContractInterpreter* CreateInterpreter(void);
+        std::string GetInterpreterIdentity(void);
+        pdo::contracts::ContractInterpreter* CreateInterpreter(void);
     }
 
 }
