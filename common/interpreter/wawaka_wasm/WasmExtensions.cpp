@@ -158,6 +158,37 @@ extern "C" double strtod_wrapper(
     }
 }
 
+/* ----------------------------------------------------------------- *
+ * NAME: strstr
+ * ----------------------------------------------------------------- */
+extern "C" int32 strstr_wrapper(
+    wasm_module_inst_t module_inst,
+    int32 haystack_offset,
+    int32 needle_offset)
+{
+    try {
+        /* could figure out the minimum length */
+        if (! wasm_runtime_validate_app_addr(module_inst, haystack_offset, 1))
+            return 0;
+
+        if (! wasm_runtime_validate_app_addr(module_inst, needle_offset, 1))
+            return 0;
+
+        char *haystack = (char*)wasm_runtime_addr_app_to_native(module_inst, haystack_offset);
+        char *needle = (char*)wasm_runtime_addr_app_to_native(module_inst, needle_offset);
+        char *ptr = strstr(haystack, needle);
+        if (ptr == NULL)
+            return 0;
+
+        return wasm_runtime_addr_native_to_app(module_inst, ptr);
+    }
+    catch (...) {
+        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
+        return 0;
+    }
+}
+
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef __cplusplus
@@ -228,7 +259,8 @@ static NativeSymbol extended_native_symbol_defs[] = {
     CPP_EXPORT_WASM_API2(contract_log),
     CPP_EXPORT_WASM_API2(simple_hash),
     CPP_EXPORT_WASM_API2(memchr),
-    CPP_EXPORT_WASM_API2(strtod)
+    CPP_EXPORT_WASM_API2(strtod),
+    CPP_EXPORT_WASM_API2(strstr)
 };
 
 #ifdef __cplusplus
