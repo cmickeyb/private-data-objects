@@ -12,25 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-all : build
-	@cd build; make all
+CMAKE_MINIMUM_REQUIRED(VERSION 3.2 FATAL_ERROR)
 
-clean :
-	@echo Remove build directory
-	@rm -rf build
-
-debug :
-	@echo No debug build defined
-
-test :
-	@echo No automated tests defined
-
-install : build
-	@echo install contracts
-	@cd build; make install
-
-build :
-	mkdir $@
-	cd $@ ; emconfigure cmake ..
-
-.PHONY : all clean debug install test
+FILE(GLOB MOCK_CONTRACT_SOURCE *.cpp)
+BUILD_CONTRACT(mock-contract ${MOCK_CONTRACT_SOURCE})
