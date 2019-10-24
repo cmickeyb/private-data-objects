@@ -45,7 +45,7 @@ Value::~Value(void)
         json_value_free(value_);
 }
 
-char* Value::serialize(void)
+char* Value::serialize(void) const
 {
     // serialize the result
     size_t serialized_size = json_serialization_size(value_);

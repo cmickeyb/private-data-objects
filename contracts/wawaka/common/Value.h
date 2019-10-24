@@ -28,5 +28,5 @@ public:
     Value(const JSON_Value *value);
     ~Value(void);
 
-    char *serialize(void);
+    char *serialize(void) const;
 };
