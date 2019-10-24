@@ -51,7 +51,8 @@ bool inc_value(const Message& msg, const Environment& env, Response& rsp)
     if (! value_store.set(test_key, value))
         return rsp.error("failed to save the new value");
 
-    return rsp.success(true);
+    Value v((double)value);
+    return rsp.value(v, true);
 }
 
 bool get_value(const Message& msg, const Environment& env, Response& rsp)
