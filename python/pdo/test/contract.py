@@ -160,8 +160,12 @@ def CreateAndRegisterEnclave(config) :
         try :
             for url in config['Service']['EnclaveServiceURLs'] :
                 einfo = db.add_by_url(ledger_config, url)
-                if einfo.client.interpreter == interpreter :
-                    logger.error('contract and enclave expect different interpreters; %s != %s', enclave.interpreter, interpreter)
+                if einfo is None :
+                    logger.error("unable to connect to enclave service; %s", url)
+                    sys.exit(-1)
+
+                if einfo.client.interpreter != interpreter :
+                    logger.error('contract and enclave expect different interpreters; <%s> != <%s>', einfo.client.interpreter, interpreter)
                     sys.exit(-1)
 
                 enclaveclients.append(einfo.client)
