@@ -74,3 +74,4 @@ ENDFUNCTION()
 
 ADD_SUBDIRECTORY(test-contract)
 ADD_SUBDIRECTORY(mock-contract)
+ADD_SUBDIRECTORY(exchange)
