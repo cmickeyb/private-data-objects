@@ -125,7 +125,7 @@ bool ecdsa_test(const Message& msg, const Environment& env, Response& rsp)
         return rsp.error("failed to verify the signature");
 
     // ---------- return the signature ----------
-    Value v((char*)encoded.value_);
+    ww::value::String v((char*)encoded.value_);
     return rsp.value(v, false);
 }
 
@@ -174,7 +174,7 @@ bool aes_test(const Message& msg, const Environment& env, Response& rsp)
         return rsp.error("decrypted message differs from original message");
 
     // ---------- return the signature ----------
-    Value v((char*)encoded.value_);
+    ww::value::String v((char*)encoded.value_);
     return rsp.value(v, false);
 }
 
@@ -218,7 +218,7 @@ bool rsa_test(const Message& msg, const Environment& env, Response& rsp)
         return rsp.error("decrypted key differs from the original key");
 
     // ---------- return the signature ----------
-    Value v((char*)encoded.value_);
+    ww::value::String v((char*)encoded.value_);
     return rsp.value(v, false);
 }
 

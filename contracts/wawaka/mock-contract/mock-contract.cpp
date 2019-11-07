@@ -51,7 +51,7 @@ bool inc_value(const Message& msg, const Environment& env, Response& rsp)
     if (! value_store.set(test_key, value))
         return rsp.error("failed to save the new value");
 
-    Value v((double)value);
+    ww::value::Number v((double)value);
     return rsp.value(v, true);
 }
 
@@ -61,7 +61,7 @@ bool get_value(const Message& msg, const Environment& env, Response& rsp)
     if (! value_store.get(test_key, value))
         return rsp.error("no such key");
 
-    Value v((double)value);
+    ww::value::Number v((double)value);
     return rsp.value(v, false);
 }
 
