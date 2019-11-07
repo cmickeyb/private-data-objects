@@ -15,23 +15,6 @@
 
 #pragma once
 
-#include "jsonvalue.h"
-#include "parson.h"
+#include "Value.h"
 
-class Message
-{
-private:
-    JSON_Value *parsed_message;
-    JSON_Object *root;
-
-public:
-
-    Message(void);
-    ~Message(void);
-
-    bool deserialize(const char *message);
-
-    const char* get_string(const char* key) const;
-    double get_number(const char* key) const;
-    int get_boolean(const char* key) const;
-};
+typedef ww::value::Object Message;

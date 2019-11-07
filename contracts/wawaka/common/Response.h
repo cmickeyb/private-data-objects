@@ -40,13 +40,13 @@ public:
     {
         state_changed_ = changed;
 
-        Value v(true);
+        ww::value::Boolean v(true);
         set_result(v.serialize());
 
         return true;
     };
 
-    bool value(const Value& v, bool changed)
+    bool value(const ww::value::Value& v, bool changed)
     {
         state_changed_ = changed;
         set_result(v.serialize());
