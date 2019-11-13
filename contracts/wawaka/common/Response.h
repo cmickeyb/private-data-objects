@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "DependencyList.h"
 #include "Value.h"
 
 class Response
@@ -23,7 +24,7 @@ private:
     bool status_;
     bool state_changed_;
     char *result_;
-    // something about dependencies
+    DependencyList dependency_list_;
 
 public:
     Response(void);

@@ -26,6 +26,7 @@
 #include "Message.h"
 #include "Response.h"
 #include "StringArray.h"
+#include "Util.h"
 #include "Value.h"
 #include "WasmExtensions.h"
 
@@ -39,7 +40,7 @@ const StringArray md_link_key("link");
 const StringArray md_name_key("owner");
 
 // -----------------------------------------------------------------
-// METHOD: initialize
+// METHOD: initialize_contract
 //   contract initialization method
 //
 // JSON PARAMETERS:
@@ -48,7 +49,7 @@ const StringArray md_name_key("owner");
 // RETURNS:
 //   true if successfully initialized
 // -----------------------------------------------------------------
-bool initialize(const Message& msg, const Environment& env, Response& rsp)
+bool initialize_contract(const Environment& env, Response& rsp)
 {
     // ---------- Mark as uninitialized ----------
     if (! meta_store.set(md_initialized_key, 0))
@@ -65,7 +66,7 @@ bool initialize(const Message& msg, const Environment& env, Response& rsp)
 }
 
 // -----------------------------------------------------------------
-// METHOD: set_meta_information
+// METHOD: initialize
 //   set the basic information for the asset type
 //
 // JSON PARAMETERS:
@@ -76,20 +77,10 @@ bool initialize(const Message& msg, const Environment& env, Response& rsp)
 // RETURNS:
 //   true if successfully initialized
 // -----------------------------------------------------------------
-bool set_meta_information(const Message& msg, const Environment& env, Response& rsp)
+bool initialize(const Message& msg, const Environment& env, Response& rsp)
 {
-    // Only the owner can set the asset type id
-    if (strcmp(env.creator_id_, env.message_id_) != 0)
-        return rsp.error("only the owner may set asset type meta information");
-
-    // Cannot change the asset type id once it has been initialized
-    uint32_t initialized = 0;
-    if (! meta_store.get(md_initialized_key, initialized))
-        return rsp.error("contract state corrupted, no initialized key");
-
-    if (initialized != 0)
-        return rsp.error("asset type meta information already set");
-
+    ASSERT_SENDER_IS_OWNER(env, rsp);
+    ASSERT_UNINITIALIZED(meta_store, md_initialized_key, rsp);
 
     // save the description
     const StringArray description(msg.get_string("description"));
@@ -107,7 +98,7 @@ bool set_meta_information(const Message& msg, const Environment& env, Response& 
         return rsp.error("failed to store the name");
 
     // Mark as initialized
-    initialized = 1;
+    const int initialized = 1;
     if (! meta_store.set(md_initialized_key, initialized))
         return rsp.error("failed to store the initialized key");
 
@@ -127,16 +118,9 @@ bool set_meta_information(const Message& msg, const Environment& env, Response& 
 // -----------------------------------------------------------------
 bool get_identifier(const Message& msg, const Environment& env, Response& rsp)
 {
-    // Cannot retrieve information until the asset type is initialized
-    uint32_t initialized = 0;
-    if (! meta_store.get(md_initialized_key, initialized))
-        return rsp.error("contract state corrupted, no initialized key");
+    ASSERT_INITIALIZED(meta_store, md_initialized_key, rsp);
 
-    if (initialized == 0)
-        return rsp.error("asset type meta information is not set");
-
-    // save the description
-    Value v(env.contract_id_);
+    ww::value::String v(env.contract_id_);
     return rsp.value(v, false);
 }
 
@@ -152,19 +136,13 @@ bool get_identifier(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 bool get_description(const Message& msg, const Environment& env, Response& rsp)
 {
-    // Cannot retrieve information until the asset type is initialized
-    uint32_t initialized = 0;
-    if (! meta_store.get(md_initialized_key, initialized))
-        return rsp.error("contract state corrupted, no initialized key");
-
-    if (initialized == 0)
-        return rsp.error("asset type meta information is not set");
+    ASSERT_INITIALIZED(meta_store, md_initialized_key, rsp);
 
     StringArray description;
     if (! meta_store.get(md_description_key, description))
         return rsp.error("contract state corrupted, no description");
 
-    Value v((char*)description.value_);
+    ww::value::String v((char*)description.value_);
     return rsp.value(v, false);
 }
 
@@ -180,19 +158,13 @@ bool get_description(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 bool get_link(const Message& msg, const Environment& env, Response& rsp)
 {
-    // Cannot retrieve information until the asset type is initialized
-    uint32_t initialized = 0;
-    if (! meta_store.get(md_initialized_key, initialized))
-        return rsp.error("contract state corrupted, no initialized key");
-
-    if (initialized == 0)
-        return rsp.error("asset type meta information is not set");
+    ASSERT_INITIALIZED(meta_store, md_initialized_key, rsp);
 
     StringArray link;
     if (! meta_store.get(md_link_key, link))
         return rsp.error("contract state corrupted, no link");
 
-    Value v((char*)link.value_);
+    ww::value::String v((char*)link.value_);
     return rsp.value(v, false);
 }
 
@@ -208,19 +180,13 @@ bool get_link(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 bool get_name(const Message& msg, const Environment& env, Response& rsp)
 {
-    // Cannot retrieve information until the asset type is initialized
-    uint32_t initialized = 0;
-    if (! meta_store.get(md_initialized_key, initialized))
-        return rsp.error("contract state corrupted, no initialized key");
-
-    if (initialized == 0)
-        return rsp.error("asset type meta information is not set");
+    ASSERT_INITIALIZED(meta_store, md_initialized_key, rsp);
 
     StringArray name;
     if (! meta_store.get(md_name_key, name))
         return rsp.error("contract state corrupted, no name");
 
-    Value v((char*)name.value_);
+    ww::value::String v((char*)name.value_);
     return rsp.value(v, false);
 }
 
@@ -228,7 +194,6 @@ bool get_name(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 contract_method_reference_t contract_method_dispatch_table[] = {
     CONTRACT_METHOD(initialize),
-    CONTRACT_METHOD(set_meta_information),
     CONTRACT_METHOD(get_identifier),
     CONTRACT_METHOD(get_description),
     CONTRACT_METHOD(get_link),

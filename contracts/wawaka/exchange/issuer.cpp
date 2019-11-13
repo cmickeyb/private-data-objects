@@ -31,13 +31,15 @@
 #include "WasmExtensions.h"
 
 static KeyValueStore meta_store("values");
-static KeyValueStore approved_keys("keys");
+static KeyValueStore ledger_store("ledger");
 
 const StringArray md_owner_key("owner");
 const StringArray md_signing_key("ecdsa-private-key");
 const StringArray md_verifying_key("ecdsa-public-key");
 const StringArray md_asset_type_id_key("asset-type-id");
+const StringArray md_authority_key("authority");
 const StringArray md_initialized_key("initialized");
+
 
 // -----------------------------------------------------------------
 // METHOD: initialize_contract
@@ -84,9 +86,10 @@ bool initialize_contract(const Environment& env, Response& rsp)
 //
 // JSON PARAMETERS:
 //   asset-type-id -- ecdsa public key for the asset type
+//   serialized-authority -- serialized authority structure
 //
 // RETURNS:
-//   true if asset type id successfully saved
+//   true if dataasset type id successfully saved
 // -----------------------------------------------------------------
 bool initialize(const Message& msg, const Environment& env, Response& rsp)
 {
@@ -99,6 +102,10 @@ bool initialize(const Message& msg, const Environment& env, Response& rsp)
     // would be good to make sure that this is a valid ECDSA key
     if (! meta_store.set(md_asset_type_id_key, asset_type_id))
         return rsp.error("failed to store the asset type id");
+
+    // Save the serialized authority object
+
+    // Set the dependencies in the response
 
     // Mark as initialized
     const int initialized = 1;
@@ -130,54 +137,8 @@ bool get_asset_type_id(const Message& msg, const Environment& env, Response& rsp
         return rsp.error("failed to retrieve the asset type id");
 
     // ---------- RETURN ----------
-    ww::value::Boolean v((char*)asset_type_id.value_);
+    Value v((char*)asset_type_id.value_);
     return rsp.value(v, false);
-}
-
-// -----------------------------------------------------------------
-// METHOD: add_approved_issuer
-//
-// JSON PARAMETERS:
-//   issuer-verifying-key -- verifying key of the asset issuer
-//
-// RETURNS:
-//   true if key is successfully stored
-// -----------------------------------------------------------------
-bool add_approved_issuer(const Message& msg, const Environment& env, Response& rsp)
-{
-    ASSERT_SENDER_IS_OWNER(env, rsp);
-    ASSERT_INITIALIZED(meta_store, md_initialized_key, rsp);
-
-    // Save the issuer's key
-    StringArray verifying_key(msg.get_string("verifying-key"));
-    // would be good to make sure that this is a valid ECDSA key
-
-    if (! approved_keys.set(verifying_key, 1))
-        return rsp.error("failed to save the verifying key");
-
-    // ---------- RETURN ----------
-    return rsp.success(true);
-}
-
-// -----------------------------------------------------------------
-// METHOD: get_issuer_authority
-//
-// JSON PARAMETERS:
-//   issuer-verifying-key -- verifying key of the asset issuer
-//
-// RETURNS:
-//   serialized authority object
-// -----------------------------------------------------------------
-bool get_issuer_authority(const Message& msg, const Environment& env, Response& rsp)
-{
-    ASSERT_INITIALIZED(meta_store, md_initialized_key, rsp);
-
-    // Save the issuer's key
-    StringArray verifying_key;
-    if (! approved_keys.get(verifying_key, verifying_key))
-        return rsp.error("failed to retrieve the verifying key");
-
-    return rsp.error("not implemented");
 }
 
 // -----------------------------------------------------------------
