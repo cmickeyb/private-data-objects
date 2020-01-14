@@ -21,6 +21,9 @@
 (define base-contract-package
   (package
    (define-class base-contract
+     (class-vars
+      (interface-version 1))
+
      (instance-vars
       (creator "")
       (contract-signing-keys #f)
