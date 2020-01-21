@@ -82,28 +82,6 @@ void SchemeLog(unsigned int level, const char *msg, const int value)
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-static void clear_output_buffer(scheme *sc)
-{
-    port *pt = sc->outport->_object._port;
-    Zero(pt->rep.string.start, pt->rep.string.past_the_end - pt->rep.string.start);
-
-    pt->rep.string.curr = pt->rep.string.start;
-}
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-static void copy_output_buffer(
-    scheme *sc,
-    ByteArray& output
-    )
-{
-    port *pt = sc->outport->_object._port;
-    size_t s = pt->rep.string.curr - pt->rep.string.start;
-
-    output.resize(pt->rep.string.curr - pt->rep.string.start + 1, 0);
-    memcpy_s(output.data(), output.size(), pt->rep.string.start, s);
-}
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 static std::string report_interpreter_error(
     scheme *sc,
     const char* message,
@@ -117,109 +95,6 @@ static std::string report_interpreter_error(
     error_msg.append(pt->rep.string.start);
 
     return error_msg;
-}
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-static void gipsy_put_property_p(
-    scheme *sc,
-    const char* symbol,
-    const char* property,
-    pointer pvalue
-    )
-{
-    pointer psymbol, pproperty, x;
-
-    // add the creator property to the :contract symbol
-    psymbol = mk_symbol(sc, symbol);
-    pe::ThrowIfNull(psymbol, "unable to find/create symbol");
-
-    pproperty = mk_symbol(sc, property);
-    pe::ThrowIfNull(pproperty, "unable to find/create property");
-
-    // find the symbol and update it
-    for (x = symprop(psymbol); x != sc->NIL; x = cdr(x))
-    {
-        if (caar(x) == pproperty) break;
-    }
-
-    if (x != sc->NIL)
-        cdar(x) = pvalue;
-    else
-    {
-        pointer s1 = cons(sc, pproperty, pvalue);
-        pe::ThrowIf<pe::RuntimeError>(sc->no_memory, "failure to put property");
-
-        pointer s2 = cons(sc, s1, symprop(psymbol));
-        pe::ThrowIf<pe::RuntimeError>(sc->no_memory, "failure to put property");
-
-        symprop(psymbol) = s2;
-    }
-}
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-static void gipsy_put_property(
-    scheme *sc,
-    const char* symbol,
-    const char* property,
-    const char* value
-    )
-{
-    pointer pvalue = mk_string(sc, value);
-    pe::ThrowIfNull(pvalue, "unable to create string for property");
-
-    gipsy_put_property_p(sc, symbol, property, pvalue);
-}
-
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-static pointer gipsy_get_property(
-    scheme *sc,
-    const char* symbol,
-    const char* property
-    )
-{
-    pointer psymbol = scheme_find_symbol(sc, symbol);
-    pe::ThrowIf<pe::RuntimeError>(
-        psymbol == sc->NIL,
-        "missing symbol");
-
-    pointer pproperty = scheme_find_symbol(sc, property);
-    pe::ThrowIf<pe::RuntimeError>(
-        pproperty == sc->NIL,
-        "missing property");
-
-    pointer x;
-    for (x = symprop(psymbol); x != sc->NIL; x = cdr(x)) {
-        if (caar(x) == pproperty) break;
-    }
-
-    if (x != sc->NIL)
-        return cdar(x);
-
-    return(sc->NIL);
-}
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-static void gipsy_write_to_buffer(
-    scheme *sc,
-    pointer value,
-    ByteArray& output
-    )
-{
-    clear_output_buffer(sc);
-
-    pointer writesym = scheme_find_symbol(sc, "write");
-    pe::ThrowIf<pe::RuntimeError>(writesym == sc->NIL, "unable to find write function symbol");
-
-    pointer writefn = cdr(scheme_find_symbol_value(sc, sc->envir, writesym));
-    pe::ThrowIf<pe::RuntimeError>(writefn == sc->NIL, "unable to find write function definition");
-
-    scheme_call(sc, writefn, cons(sc, value, sc->NIL));
-    pe::ThrowIf<pe::RuntimeError>(
-        sc->retcode != 0,
-        "failed to write expression to buffer");
-
-    copy_output_buffer(sc, output);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -250,7 +125,10 @@ void GipsyInterpreter::Initialize(void)
     if (interpreter_ != NULL)
         return;
 
-    interpreter_ = scheme_init_new_custom_alloc(pc::safe_malloc_for_scheme, pc::safe_free_for_scheme, pc::safe_realloc_for_scheme);
+    interpreter_ = scheme_init_new_custom_alloc(
+        pc::safe_malloc_for_scheme,
+        pc::safe_free_for_scheme,
+        pc::safe_realloc_for_scheme);
     pe::ThrowIfNull(interpreter_, "failed to create the gipsy scheme interpreter");
 
     /* ---------- Create the interpreter ---------- */
@@ -443,6 +321,19 @@ void GipsyInterpreter::create_initial_contract_state(
     // connect the key value store to the interpreter, i do not believe
     // there are any security implications for hooking it up at this point
     scheme_set_external_data(sc, &inoutContractState);
+
+    // serialize the environment parameter for the method
+    pstate::StateBlockId initialStateHash;
+    initialStateHash.assign(initialStateHash.size(), 0); // this is probably not necessary
+
+    std::string env;
+    pc::create_invocation_environment(ContractID, CreatorID, inContractCode, inMessage, initialStateHash, env);
+
+    // find the **initialize** symbol
+    pointer _initialize_entry_point = scheme_find_symbol(sc, "**initialize**");
+    pe::ThrowIf<pe::ValueError>(
+        _initialize_entry_point == sc->NIL,
+        "misconfigured enclave, missing initialize function");
 
     pointer _class = scheme_find_symbol(sc, inContractCode.Name.c_str());
     pe::ThrowIf<pe::ValueError>(
