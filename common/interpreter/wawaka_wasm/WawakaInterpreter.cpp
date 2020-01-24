@@ -110,7 +110,7 @@ void WawakaInterpreter::parse_response_string(
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-const char* WawakaInterpreter::report_interpreter_error(
+static const char* WawakaInterpreter::report_interpreter_error(
     const char* message,
     const char* error)
 {
