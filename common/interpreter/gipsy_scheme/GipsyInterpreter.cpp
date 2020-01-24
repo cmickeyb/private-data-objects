@@ -180,6 +180,7 @@ void GipsyInterpreter::load_contract_code(
     pe::ThrowIf<pe::ValueError>(
         sc->retcode != 0,
         report_interpreter_error(sc, "failed to load the contract code"));
+    SAFE_LOG(PDO_LOG_WARNING, "contract code loaded");
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -191,11 +192,15 @@ void GipsyInterpreter::create_initial_contract_state(
     pdo::state::Basic_KV_Plus& inoutContractState
     )
 {
+    SAFE_LOG(PDO_LOG_WARNING, "create_initial_contract_state");
+
     scheme* sc = interpreter_;
     pe::ThrowIfNull(sc, "interpreter has not been initialized");
 
     try {
+        SAFE_LOG(PDO_LOG_WARNING, "load code");
         this->load_contract_code(inContractCode);
+        SAFE_LOG(PDO_LOG_WARNING, "code loaded");
     }
     catch (std::exception& e) {
         SAFE_LOG_EXCEPTION("load contract code");
@@ -204,19 +209,32 @@ void GipsyInterpreter::create_initial_contract_state(
 
     // connect the key value store to the interpreter, i do not believe
     // there are any security implications for hooking it up at this point
+    SAFE_LOG(PDO_LOG_WARNING, "save external state reference");
     scheme_set_external_data(sc, &inoutContractState);
 
     // serialize the environment parameter for the method
     pstate::StateBlockId initialStateHash;
     initialStateHash.assign(initialStateHash.size(), 0); // this is probably not necessary
 
+    SAFE_LOG(PDO_LOG_WARNING, "create the environment");
     std::string env;
     pc::create_invocation_environment(ContractID, CreatorID, inContractCode, inMessage, initialStateHash, env);
 
     // find the **initialize** symbol
-    pointer _initialize_entry_point = scheme_find_symbol(sc, "**initialize**");
+    //pointer _initialize_entry_point = scheme_find_symbol(sc, "**initialize**");
+    SAFE_LOG(PDO_LOG_WARNING, "lookup symbol");
+    pointer _initialize_entry_point = scheme_find_symbol(sc, "test-function");
+    SAFE_LOG(PDO_LOG_WARNING, "INITIALIZE: %d, %d, %d",
+             _initialize_entry_point == sc->NIL,
+             sc->retcode != 0,
+             cdr(_initialize_entry_point) == sc->NIL);
+
+             // (cdr(_initialize_entry_point)->_flag & 31));
+
     pe::ThrowIf<pe::ValueError>(
-        _initialize_entry_point == sc->NIL || sc->retcode != 0,
+        _initialize_entry_point == sc->NIL
+        || sc->retcode != 0
+        || !sc->vptr->is_closure(cdr(_initialize_entry_point)),
         "misconfigured enclave, missing initialize function");
 
     pointer arglist;
@@ -296,7 +314,7 @@ void GipsyInterpreter::send_message_to_contract(
     pointer _dispatch_entry_point = scheme_find_symbol(sc, "**dispatch**");
     pe::ThrowIf<pe::ValueError>(
         _dispatch_entry_point == sc->NIL || sc->retcode != 0,
-        "misconfigured enclave, missing initialize function");
+        "misconfigured enclave, missing dispatch function");
 
     pointer arglist;
     pointer _invocation = sc->vptr->mk_string(sc, inMessage.Message.c_str());

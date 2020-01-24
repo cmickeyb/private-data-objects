@@ -249,6 +249,12 @@
    ;; RETURNS: invocation result
    ;; -----------------------------------------------------------------
    (define (initialize json-environment)
+     (unknown-function)
+     (enclave-log 3 "initialize")
+     json-environment)
+
+   (define (x json-environment)
+     (enclave-log 3 "initialize")
      (safe-invocation
       (let* ((invocation-env (make-instance dispatch-package::environment json-environment))
              (invocation-res (make-instance dispatch-package::response))
@@ -313,4 +319,7 @@
 
 ;; PACKAGE EXPORTS
 (define **dispatch** dispatch-package::dispatch)
-(define **initialize** dispatch-package::initialize)
+;;(define **initialize** dispatch-package::initialize)
+(define (**initialize** json-environment) (dispatch-package::initialize json-environment))
+(define (test-function json-environment)
+  (begin (enclave-log 3 json-environment) json-environment))
