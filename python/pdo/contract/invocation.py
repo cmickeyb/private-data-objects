@@ -70,7 +70,14 @@ class GipsyInvocationRequest(InvocationRequest) :
 
 # -----------------------------------------------------------------
 def invocation_request(method, *args, **kwargs) :
-    if os.environ.get('PDO_INTERPRETER', 'gipsy') == 'gipsy':
-        return GipsyInvocationRequest(method, *args, **kwargs)
+    # if os.environ.get('PDO_INTERPRETER', 'gipsy') == 'gipsy':
+    #     return GipsyInvocationRequest(method, *args, **kwargs)
 
     return InvocationRequest(method, *args, **kwargs)
+
+# -----------------------------------------------------------------
+def invocation_response(response_string) :
+    try :
+        return json.loads(response_string)
+    except Exception as e:
+        return str(response_string)
