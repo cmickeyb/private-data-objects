@@ -24,7 +24,7 @@
      `(let ((response
              (catch
               (lambda args
-                (test-logger::logger-error "invocation failed: " args)
+                ;;(test-logger::logger-error "invocation failed: " args)
                 (let ((invocation-res (make-instance dispatch-package::response)))
                   (send invocation-res 'return-error "invocation failed")))
               (begin ,@expressions))))
@@ -43,12 +43,12 @@
    (define **environment-validation-string**
      (expression-to-json
       '(("ContractID" "")
-        ("CreatorID" "")
+        ("CreatorID" ""
         ("OriginatorID" "")
         ("StateHash" "")
         ("MessageHash" "")
         ("ContractCodeName" ""))
-      ))
+      )))
 
    (define **invocation-validation-string**
      (expression-to-json
@@ -203,14 +203,14 @@
      (if _status
          (expression-to-json
           (list (list "Status" #t)
-                (list "Result" _value)
+                (list "Response" _value)
                 (list "StateChanged" _state-modified)
-                (list "Dependencies" _dependencies)))
+                (list "Dependencies" (apply vector _dependencies))))
          (expression-to-json
           (list (list "Status" #f)
-                (list "Result" _value)
+                (list "Response" _value)
                 (list "StateChanged" #f)
-                (list "Dependencies" '())))))
+                (list "Dependencies" #())))))
 
    ;; XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
    ;; dispatch/initialize and support functions
@@ -249,12 +249,6 @@
    ;; RETURNS: invocation result
    ;; -----------------------------------------------------------------
    (define (initialize json-environment)
-     (unknown-function)
-     (enclave-log 3 "initialize")
-     json-environment)
-
-   (define (x json-environment)
-     (enclave-log 3 "initialize")
      (safe-invocation
       (let* ((invocation-env (make-instance dispatch-package::environment json-environment))
              (invocation-res (make-instance dispatch-package::response))
@@ -319,7 +313,4 @@
 
 ;; PACKAGE EXPORTS
 (define **dispatch** dispatch-package::dispatch)
-;;(define **initialize** dispatch-package::initialize)
-(define (**initialize** json-environment) (dispatch-package::initialize json-environment))
-(define (test-function json-environment)
-  (begin (enclave-log 3 json-environment) json-environment))
+(define **initialize** dispatch-package::initialize)

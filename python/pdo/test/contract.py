@@ -381,6 +381,8 @@ def UpdateTheContract(config, enclaves, contract, contract_invoker_keys) :
             if len(update_response.invocation_response) >= 15 :
                 result += "..."
 
+            logger.info('RESULT: <{}>'.format(update_response.invocation_response))
+            unpacked_response = contract_helper.invocation_response(update_response.invocation_response)
             if update_response.status is False :
                 logger.info('failed: {0} --> {1}'.format(expression, result))
                 if test['invert'] is None or test['invert'] != 'fail' :

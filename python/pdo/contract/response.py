@@ -18,6 +18,7 @@ import queue
 import time
 import threading
 
+from pdo.contract.invocation import invocation_response
 import pdo.common.crypto as crypto
 import pdo.common.keys as keys
 from pdo.common.utility import deprecated
@@ -55,7 +56,8 @@ class ContractResponse(object) :
         :param response: diction containing the response from the enclave
         """
         self.status = response['Status']
-        self.invocation_response = response['InvocationResponse']
+        self.invocation_response_raw = response['InvocationResponse']
+        self.invocation_response = invocation_response(response['InvocationResponse'])
         self.state_changed = response['StateChanged']
         self.new_state_object = request.contract_state
         #if the new state is same as the old state, then change set is empty

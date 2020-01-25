@@ -27,7 +27,7 @@
 #include "types.h"
 #include "log.h"
 
-#include "scheme-private.h"
+//#include "scheme-private.h"
 
 #include "InvocationHelpers.h"
 #include "GipsyInterpreter.h"
@@ -180,7 +180,6 @@ void GipsyInterpreter::load_contract_code(
     pe::ThrowIf<pe::ValueError>(
         sc->retcode != 0,
         report_interpreter_error(sc, "failed to load the contract code"));
-    SAFE_LOG(PDO_LOG_WARNING, "contract code loaded");
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -192,50 +191,34 @@ void GipsyInterpreter::create_initial_contract_state(
     pdo::state::Basic_KV_Plus& inoutContractState
     )
 {
-    SAFE_LOG(PDO_LOG_WARNING, "create_initial_contract_state");
-
     scheme* sc = interpreter_;
     pe::ThrowIfNull(sc, "interpreter has not been initialized");
 
-    try {
-        SAFE_LOG(PDO_LOG_WARNING, "load code");
-        this->load_contract_code(inContractCode);
-        SAFE_LOG(PDO_LOG_WARNING, "code loaded");
-    }
-    catch (std::exception& e) {
-        SAFE_LOG_EXCEPTION("load contract code");
-        throw;
-    }
+    this->load_contract_code(inContractCode);
 
     // connect the key value store to the interpreter, i do not believe
     // there are any security implications for hooking it up at this point
-    SAFE_LOG(PDO_LOG_WARNING, "save external state reference");
     scheme_set_external_data(sc, &inoutContractState);
 
     // serialize the environment parameter for the method
     pstate::StateBlockId initialStateHash;
     initialStateHash.assign(initialStateHash.size(), 0); // this is probably not necessary
 
-    SAFE_LOG(PDO_LOG_WARNING, "create the environment");
     std::string env;
     pc::create_invocation_environment(ContractID, CreatorID, inContractCode, inMessage, initialStateHash, env);
 
     // find the **initialize** symbol
-    //pointer _initialize_entry_point = scheme_find_symbol(sc, "**initialize**");
-    SAFE_LOG(PDO_LOG_WARNING, "lookup symbol");
-    pointer _initialize_entry_point = scheme_find_symbol(sc, "test-function");
-    SAFE_LOG(PDO_LOG_WARNING, "INITIALIZE: %d, %d, %d",
-             _initialize_entry_point == sc->NIL,
-             sc->retcode != 0,
-             cdr(_initialize_entry_point) == sc->NIL);
+    pointer _initialize_symbol = scheme_find_symbol(sc, "**initialize**");
+    pe::ThrowIf<pe::ValueError>(
+        _initialize_symbol == sc->NIL || sc->retcode != 0,
+        "misconfigured enclave, missing initialize function");
 
-             // (cdr(_initialize_entry_point)->_flag & 31));
-
+    pointer _initialize_entry_point = scheme_find_symbol_value(sc, sc->envir, _initialize_symbol);
     pe::ThrowIf<pe::ValueError>(
         _initialize_entry_point == sc->NIL
         || sc->retcode != 0
-        || !sc->vptr->is_closure(cdr(_initialize_entry_point)),
-        "misconfigured enclave, missing initialize function");
+        || ! sc->vptr->is_closure(cdr(_initialize_entry_point)),
+        "misconfigured enclave, malformed initialize function");
 
     pointer arglist;
     pointer _environment = sc->vptr->mk_string(sc, env.c_str());
@@ -310,11 +293,18 @@ void GipsyInterpreter::send_message_to_contract(
     std::string env;
     pc::create_invocation_environment(ContractID, CreatorID, inContractCode, inMessage, inContractStateHash, env);
 
-    // find the **initialize** symbol
-    pointer _dispatch_entry_point = scheme_find_symbol(sc, "**dispatch**");
+    // find the **dispatch** symbol
+    pointer _dispatch_symbol = scheme_find_symbol(sc, "**dispatch**");
     pe::ThrowIf<pe::ValueError>(
-        _dispatch_entry_point == sc->NIL || sc->retcode != 0,
+        _dispatch_symbol == sc->NIL || sc->retcode != 0,
         "misconfigured enclave, missing dispatch function");
+
+    pointer _dispatch_entry_point = scheme_find_symbol_value(sc, sc->envir, _dispatch_symbol);
+    pe::ThrowIf<pe::ValueError>(
+        _dispatch_entry_point == sc->NIL
+        || sc->retcode != 0
+        || ! sc->vptr->is_closure(cdr(_dispatch_entry_point)),
+        "misconfigured enclave, malformed dispatch function");
 
     pointer arglist;
     pointer _invocation = sc->vptr->mk_string(sc, inMessage.Message.c_str());
