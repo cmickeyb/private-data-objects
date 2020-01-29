@@ -1415,6 +1415,8 @@ static pointer enclave_log(scheme *sc, pointer args)
 #else
     SAFE_LOG(level, "%s", message.c_str());
 #endif
+
+    return sc->T;
 }
 
 /* ----------------------------------------------------------------- */

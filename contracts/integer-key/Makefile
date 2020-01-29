@@ -19,6 +19,7 @@ ROOTDIR := $(abspath $(SRCDIR)/../..)
 GIPSY_SCHEME := $(ROOTDIR)/contracts/bin/gipsyscheme
 INSTALLDIR = $(PDO_HOME)/contracts
 
+PACKAGES := $(wildcard ../packages/*.scm)
 CONTRACTS := _integer-key.scm
 DEBUG_CONTRACTS := $(addprefix _debug, $(CONTRACTS))
 PLUGINS := integer-key.py
@@ -30,7 +31,7 @@ debug : $(DEBUG_CONTRACTS)
 test :
 	@echo No automated tests defined
 
-_integer-key.scm : integer-key.bld integer-key.scm
+_integer-key.scm : integer-key.bld integer-key.scm $(PACKAGES)
 	$(GIPSY_SCHEME) -1 integer-key.bld
 
 _debug_integer-key.scm : integer-key.bld integer-key.scm integer-key-test.scm

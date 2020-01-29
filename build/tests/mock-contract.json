@@ -13,7 +13,7 @@
     },
     {
         "MethodName": "get_unknown_value",
-        "expected": "method evaluation failed; message not understood.*",
+        "expected": "method evaluation failed",
         "invert": "fail"
     },
     {
@@ -26,7 +26,7 @@
                 ]
             ]
         ],
-        "expected": "malformed dependency.*",
+        "expected": "method evaluation failed",
         "invert": "fail"
     },
     {

@@ -377,19 +377,19 @@ def UpdateTheContract(config, enclaves, contract, contract_invoker_keys) :
             update_request = contract.create_update_request(contract_invoker_keys, expression, enclave_to_use)
             update_response = update_request.evaluate()
 
-            result = update_response.invocation_response[:15]
-            if len(update_response.invocation_response) >= 15 :
+            raw_result = str(update_response.invocation_response)
+            result = raw_result[:15]
+            if len(raw_result) >= 15 :
                 result += "..."
 
-            logger.info('RESULT: <{}>'.format(update_response.invocation_response))
-            unpacked_response = contract_helper.invocation_response(update_response.invocation_response)
+            unpacked_response = contract_helper.invocation_response(raw_result)
             if update_response.status is False :
                 logger.info('failed: {0} --> {1}'.format(expression, result))
-                if test['invert'] is None or test['invert'] != 'fail' :
+                if test.get('invert') is None or test.get('invert') != 'fail' :
                     total_failed += 1
                     logger.warn('inverted test failed: %s instead of %s', result, test['expected'])
 
-                if test['expected'] and not re.match(test['expected'], update_response.invocation_response) :
+                elif test.get('expected') and not re.match(test.get('expected'), raw_result) :
                     total_failed += 1
                     logger.warn('test failed: %s instead of %s', result, test['expected'])
 
@@ -397,12 +397,13 @@ def UpdateTheContract(config, enclaves, contract, contract_invoker_keys) :
 
             logger.info('{0} --> {1}'.format(expression, result))
 
-            if test['expected'] and not re.match(test['expected'], update_response.invocation_response) :
+            if test.get('expected') and not re.match(test.get('expected'), raw_result) :
                 total_failed += 1
                 logger.warn('test failed: %s instead of %s', result, test['expected'])
 
         except Exception as e:
-            logger.error('enclave failed to evaluation expression; %s', str(e))
+            logger.exception("FOOOOO")
+            logger.error('enclave failed to evaluate expression; %s', str(e))
             ErrorShutdown()
 
         # if this operation did not change state then there is nothing to commit

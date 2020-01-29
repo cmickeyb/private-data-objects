@@ -92,11 +92,23 @@ const char* GipsyInterpreter::report_interpreter_error(
     port *pt = sc->outport->_object._port;
 
     error_msg_ = message;
-    error_msg_.append("; ");
     if (error == NULL)
-        error_msg_.append(pt->rep.string.start);
+    {
+        const char* e = pt->rep.string.start;
+        if (strnlen(e, 1) > 0)
+        {
+            error_msg_.append("; ");
+            error_msg_.append(e);
+        }
+    }
     else
-        error_msg_.append(error);
+    {
+        if (strnlen(error, 1) > 0)
+        {
+            error_msg_.append("; ");
+            error_msg_.append(error);
+        }
+    }
 
     return error_msg_.c_str();
 }
@@ -152,7 +164,7 @@ void GipsyInterpreter::Initialize(void)
     scheme_load_string(sc, (const char *)packages_package_scm, packages_package_scm_len);
     pe::ThrowIf<pe::RuntimeError>(
         sc->retcode != 0,
-        "failed to load the gipsy initialization package");
+        report_interpreter_error(sc, "failed to load the gipsy initialization package"));
 
     /* ---------- Reserve extra space in preparation for the contract ---------- */
     pointer p = sc->vptr->reserve_cells(sc, CELL_SEGSIZE * 2);
@@ -334,7 +346,7 @@ void GipsyInterpreter::send_message_to_contract(
     rexpr = scheme_call(sc, cdr(_dispatch_entry_point), arglist);
     pe::ThrowIf<pe::ValueError>(
         sc->retcode < 0 ,
-        report_interpreter_error(sc, "method evaluation failed"));
+        report_interpreter_error(sc, "method evaluation failed", ""));
 
     pe::ThrowIf<pe::ValueError>(
         ! sc->vptr->is_string(rexpr),
@@ -344,7 +356,7 @@ void GipsyInterpreter::send_message_to_contract(
     pc::parse_invocation_response(strvalue(rexpr), outMessageResult, status, outStateChangedFlag, outDependencies);
     pe::ThrowIf<pe::ValueError>(
         ! status,
-        report_interpreter_error(sc, "operation failed", outMessageResult.c_str()));
+        report_interpreter_error(sc, "method evaluation failed", outMessageResult.c_str()));
 
     // this should not be necessary, but lets make sure the interpreter
     // doesn't have any carry over

@@ -5,7 +5,7 @@
         "KeywordParameters": {
             "value" : "A"
         },
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -13,7 +13,7 @@
         "KeywordParameters": {
             "value" : "B"
         },
-       "expected":"#t"
+       "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -21,7 +21,7 @@
         "KeywordParameters": {
             "value" : "C"
         },
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -29,7 +29,7 @@
         "KeywordParameters": {
             "value" : "D"
         },
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -37,7 +37,7 @@
         "KeywordParameters": {
             "value" : "E"
         },
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -45,7 +45,7 @@
         "KeywordParameters": {
             "value" : "F"
         },
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -53,7 +53,7 @@
         "KeywordParameters": {
             "value" : "G"
         },
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -61,7 +61,7 @@
         "KeywordParameters": {
             "value" : "H"
         },
-       "expected":"#t"
+       "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -69,8 +69,9 @@
         "KeywordParameters": {
             "value" : "I"
         },
-        "expected":"intrinsic state size exceeds maximum",
-        "invert": "fail"
+        "x-expected":"intrinsic state size exceeds maximum",
+        "x-invert": "fail",
+        "expected":"True"
     },
     {
         "MethodName": "big-state",
@@ -78,8 +79,9 @@
         "KeywordParameters": {
             "value" : "J"
         },
-        "expected":"intrinsic state size exceeds maximum",
-        "invert": "fail"
+        "x-expected":"intrinsic state size exceeds maximum",
+        "x-invert": "fail",
+        "expected":"True"
     },
     {
         "MethodName": "deep-recursion",
@@ -88,27 +90,31 @@
     },
     {
         "MethodName": "clear-state",
-        "expected":"#t"
+        "expected":"True"
     },
     {
         "MethodName": "deep-recursion",
         "PositionalParameters": [10000],
-        "expected":"10000"
+        "invert": "fail",
+        "x-expected":"10000"
     },
     {
         "MethodName": "deep-recursion",
         "PositionalParameters": [15000],
-        "expected":"15000"
+        "invert": "fail",
+        "x-expected":"15000"
     },
     {
         "MethodName": "deep-recursion",
         "PositionalParameters": [20000],
-        "expected":"20000"
+        "invert": "fail",
+        "x-expected":"20000"
     },
     {
         "MethodName": "deep-recursion",
         "PositionalParameters": [21000],
-        "expected":"21000"
+        "invert": "fail",
+        "x-expected":"21000"
     },
     {
         "MethodName": "deep-recursion",
@@ -128,7 +134,7 @@
             "key" : "big-value",
             "value-base": "b"
         },
-        "expected": "\"b{2000}\""
+        "expected": "b{2000}"
     },
     {
         "MethodName": "big-value",
@@ -137,7 +143,7 @@
             "key" : "big-value",
             "value-base": "b"
         },
-        "expected": "\"b{4000}\""
+        "expected": "b{4000}"
     },
     {
         "MethodName": "big-value",
@@ -146,7 +152,7 @@
             "key" : "big-value",
             "value-base": "b"
         },
-        "expected": "\"b{8000}\""
+        "expected": "b{8000}"
     },
     {
         "MethodName": "big-value",
@@ -155,7 +161,7 @@
             "key" : "big-value",
             "value-base": "b"
         },
-        "expected": "\"b{16000}\""
+        "expected": "b{16000}"
     },
     {
         "MethodName": "big-value",
@@ -164,7 +170,7 @@
             "key" : "big-value",
             "value-base": "b"
         },
-        "expected": "\"b{32000}\""
+        "expected": "b{32000}"
     },
     {
         "MethodName": "big-value",
@@ -173,7 +179,7 @@
             "key" : "big-value",
             "value-base": "b"
         },
-        "expected": "\"b{64000}\""
+        "expected": "b{64000}"
     },
     {
         "MethodName": "deep-recursion",
@@ -195,7 +201,7 @@
             "first": 0,
             "last": 3
         },
-        "expected": "\\(1 1 1 1\\)"
+        "expected": "\\[1, 1, 1, 1\\]"
     },
     {
         "MethodName": "fill-vector",
@@ -228,7 +234,7 @@
             "first": 0,
             "last": 3
         },
-        "expected": "\\(0 1 1 1\\)"
+        "expected": "\\[0, 1, 1, 1\\]"
     },
     {
         "MethodName": "fill-vector",
@@ -259,7 +265,7 @@
             "first": 0,
             "last": 3
         },
-        "expected": "\\(0 1 1 0\\)"
+        "expected": "\\[0, 1, 1, 0\\]"
     },
     {
         "MethodName": "many-keys",
@@ -268,7 +274,7 @@
             "key-base": "a",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -277,7 +283,7 @@
             "key-base": "b",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -286,7 +292,7 @@
             "key-base": "c",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -295,7 +301,7 @@
             "key-base": "d",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -304,7 +310,7 @@
             "key-base": "e",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -313,7 +319,7 @@
             "key-base": "f",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -322,7 +328,7 @@
             "key-base": "g",
             "value": "v"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "many-keys",
@@ -331,7 +337,7 @@
             "key-base": "g",
             "value": "n"
         },
-        "expected": "#t"
+        "expected": "True"
     },
     {
         "MethodName": "deep-recursion",
