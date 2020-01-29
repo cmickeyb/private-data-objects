@@ -24,9 +24,9 @@
      `(let ((response
              (catch
               (lambda args
-                ;;(test-logger::logger-error "invocation failed: " args)
+                (enclave-log 3 (string-append "exception occured during method evaluation: " (expression->string args)))
                 (let ((invocation-res (make-instance dispatch-package::response)))
-                  (send invocation-res 'return-error "invocation failed")))
+                  (send invocation-res 'return-error* (car args) (cdr args))))
               (begin ,@expressions))))
         (send response 'serialize)))
 
@@ -173,11 +173,23 @@
 
    ;; -----------------------------------------------------------------
    ;; -----------------------------------------------------------------
+   (define-method response (add-dependency-vector dependency-vector)
+     (for-each
+      (lambda (reference-vector)
+        (send self 'add-dependency (vector->list reference-vector)))
+      (vector->list dependencies)))
+
+   ;; -----------------------------------------------------------------
+   ;; -----------------------------------------------------------------
    (define-method response (return-success state-modified)
      (instance-set! self '_status #t)
      (instance-set! self '_value #t)
      (instance-set! self '_state-modified state-modified)
      self)
+
+   (define (return-success state-modified)
+     (let ((response (make-instance dispatch-package::response)))
+       (send response 'return-success state-modified)))
 
    ;; -----------------------------------------------------------------
    ;; -----------------------------------------------------------------
@@ -187,9 +199,13 @@
      (instance-set! self '_state-modified state-modified)
      self)
 
+   (define (return-value value state-modified)
+     (let ((response (make-instance dispatch-package::response)))
+       (send response 'return-value value state-modified)))
+
    ;; -----------------------------------------------------------------
    ;; -----------------------------------------------------------------
-   (define-method response (return-error message . args)
+   (define-method response (return-error* message args)
      (instance-set! self '_status #f)
      (let ((msg (foldr (lambda (m e) (string-append m " " (expression->string e))) message args)))
        (instance-set! self '_value msg))
@@ -199,18 +215,30 @@
 
    ;; -----------------------------------------------------------------
    ;; -----------------------------------------------------------------
+   (define-method response (return-error message . args)
+     (send self 'return-error* message args))
+
+   (define (return-error message . args)
+     (let ((response (make-instance dispatch-package::response)))
+       (send response 'return-error* message args)))
+
+   ;; -----------------------------------------------------------------
+   ;; -----------------------------------------------------------------
    (define-method response (serialize)
      (if _status
-         (expression-to-json
-          (list (list "Status" #t)
-                (list "Response" _value)
-                (list "StateChanged" _state-modified)
-                (list "Dependencies" (apply vector _dependencies))))
-         (expression-to-json
-          (list (list "Status" #f)
-                (list "Response" _value)
-                (list "StateChanged" #f)
-                (list "Dependencies" #())))))
+         (let* ((deplist (map (lambda (d) `(("ContractID" ,(car d)) ("StateHash" ,(cadr d)))) _dependencies))
+                (sexpr (list (list "Status" #t)
+                             (list "Response" _value)
+                             (list "StateChanged" _state-modified)
+                             (list "Dependencies" (apply vector deplist)))))
+           (dispatch-package::pdo-error-wrap (expression-to-json sexpr)))
+
+         (let ((sexpr (list (list "Status" #f)
+                            (list "Response" _value)
+                            (list "StateChanged" #f)
+                            (list "Dependencies" #()))))
+           (dispatch-package::pdo-error-wrap (expression-to-json sexpr)))))
+
 
    ;; XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
    ;; dispatch/initialize and support functions
@@ -249,6 +277,7 @@
    ;; RETURNS: invocation result
    ;; -----------------------------------------------------------------
    (define (initialize json-environment)
+     ;; (enclave-log 3 "initialize")
      (safe-invocation
       (let* ((invocation-env (make-instance dispatch-package::environment json-environment))
              (invocation-res (make-instance dispatch-package::response))
@@ -257,7 +286,7 @@
         (assert (oops::class? contract-class) "unknown contract class")
         (if (= (_interface-version_ contract-class) 1)
             (send invocation-env 'setup-environment))
-        (let ((contract-instance (make-instance* contract-class (list invocation-env invocation-res))))
+        (let ((contract-instance (make-instance* contract-class (list invocation-env))))
           (assert (_save-contract-state_ contract-instance) "failed to save contract state"))
         (send invocation-res 'return-success #t))))
 
@@ -266,28 +295,34 @@
    ;; the environment setup, need to ensure that the parameters are not
    ;; evaluated further
    ;; -----------------------------------------------------------------
-   (define (_dispatch-v1_ invocation-env invocation-req invocation-res contract-instance)
-     ;;(test-logger::logger-info "_dispatch-v1_")
+   (define (_dispatch-v1_ invocation-env invocation-req contract-instance)
+     ;; (enclave-log 3 "_dispatch-v1_")
      (let* ((method (send invocation-req 'get-method))
             (positional-parameters (send invocation-req 'get-positional-parameters))
             (keyword-parameters (send invocation-req 'get-keyword-parameters))
             (parameters (append positional-parameters keyword-parameters)))
        (send invocation-env 'setup-environment)
-       (let ((result (oops::send* contract-instance method parameters)))
+       (let ((invocation-res (make-instance dispatch-package::response))
+             (result (oops::send* contract-instance method parameters)))
          (map (lambda (d) (send invocation-res 'add-dependency d))
               (get ':ledger 'dependencies))
-         (send invocation-res 'return-value (expression->string result) (not (get ':method 'immutable))))
-       invocation-res))
+         (send invocation-res 'return-value (expression->string result) (not (get ':method 'immutable))))))
 
    ;; -----------------------------------------------------------------
    ;; internal function that implements the new execution API
    ;; -----------------------------------------------------------------
-   (define (_dispatch-v2_ invocation-env invocation-req invocation-res contract-instance)
-     ;;(test-logger::logger-info "_dispatch-v2_")
+   (define (_dispatch-v2_ invocation-env invocation-req contract-instance)
+     ;; (enclave-log 3 "_dispatch-v2_")
      (let* ((method (send invocation-req 'get-method))
-            (expression `(send contract-instance ',method invocation-env invocation-req invocation-res)))
-       (eval expression)
-       invocation-res))
+            (positional-parameters (send invocation-req 'get-positional-parameters))
+            (keyword-parameters (send invocation-req 'get-keyword-parameters))
+            (parameters (cons invocation-env (append positional-parameters keyword-parameters))))
+       (let ((invocation-res (oops::send* contract-instance method parameters)))
+         (assert (oops::instance? invocation-res)
+                 "invalid return type, not a class instance")
+         (assert (eq? (oops::class-name (eval (oops::class-name invocation-res))) 'response)
+                 "invalid return type, not a response")
+         invocation-res)))
 
    ;; -----------------------------------------------------------------
    ;; NAME: dispatch
@@ -299,16 +334,15 @@
    (define (dispatch json-environment json-invocation)
      (safe-invocation
       (let* ((invocation-env (make-instance dispatch-package::environment json-environment))
-             (invocation-req (make-instance dispatch-package::request json-invocation))
-             (invocation-res (make-instance dispatch-package::response)))
+             (invocation-req (make-instance dispatch-package::request json-invocation)))
         (let ((contract-instance (_load-contract-state_)))
           (assert contract-instance "failed to load contract state")
-          (if (= (_interface-version_ contract-instance) 1)
-              (_dispatch-v1_ invocation-env invocation-req invocation-res contract-instance)
-              (_dispatch-v2_ invocation-env invocation-req invocation-res contract-instance))
-          (if (and (send invocation-res 'success?) (send invocation-res 'state-modified?))
-              (assert (_save-contract-state_ contract-instance) "failed to save contract state")))
-        invocation-res)))
+          (let ((invocation-res (if (= (_interface-version_ contract-instance) 1)
+                                    (_dispatch-v1_ invocation-env invocation-req contract-instance)
+                                    (_dispatch-v2_ invocation-env invocation-req contract-instance))))
+            (if (and (send invocation-res 'success?) (send invocation-res 'state-modified?))
+                (assert (_save-contract-state_ contract-instance) "failed to save contract state"))
+            invocation-res)))))
    ))
 
 ;; PACKAGE EXPORTS

@@ -52,7 +52,7 @@ extern "C" {
  * Undefine it if you only care about faster speed and not strict Scheme compatibility.
  */
 
-/* #define USE_SCHEME_STACK */
+#define USE_SCHEME_STACK
 
 #if USE_DL
 # define USE_INTERFACE 1
