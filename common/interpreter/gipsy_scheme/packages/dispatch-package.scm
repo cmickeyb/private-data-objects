@@ -177,7 +177,7 @@
      (for-each
       (lambda (reference-vector)
         (send self 'add-dependency (vector->list reference-vector)))
-      (vector->list dependencies)))
+      (vector->list dependency-vector)))
 
    ;; -----------------------------------------------------------------
    ;; -----------------------------------------------------------------

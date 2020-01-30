@@ -39,13 +39,19 @@
            (instance-set! self 'contract-encryption-keys (make-instance encryption-keys))
            (instance-set! self 'base_initialized #t))))
 
-   (define-method base-contract-v2 (get-creator) creator)
-
-   (define-const-method base-contract-v2 (get-public-encryption-key)
+   (define-method base-contract-v2 (_get-public-encryption-key_)
      (send contract-encryption-keys 'get-public-encryption-key))
 
-   (define-const-method base-contract-v2 (get-public-signing-key)
+   (define-method base-contract-v2 (_get-public-signing-key_)
      (send contract-signing-keys 'get-public-signing-key))
+
+   (define-const-method base-contract-v2 (get-public-encryption-key environment)
+     (let ((key (send self '_get-public-encryption-key_)))
+       (dispatch-package::return-value key #f)))
+
+   (define-const-method base-contract-v2 (get-public-signing-key environment)
+     (let ((key (send self '_get-public-signing-key_)))
+       (dispatch-package::return-value key #f)))
 
    ))
 
