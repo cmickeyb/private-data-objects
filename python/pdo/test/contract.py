@@ -34,10 +34,11 @@ import pdo.service_client.service_data.eservice as db
 
 import pdo.contract as contract_helper
 from pdo.contract.response import ContractResponse
-import pdo.common.crypto as crypto
-import pdo.common.keys as keys
-import pdo.common.secrets as secrets
-import pdo.common.utility as putils
+from pdo.common import crypto
+from pdo.common import keys
+from pdo.common import utility as putils
+from pdo.common import config as pconfig
+from pdo.common import logger as plogger
 
 import logging
 logger = logging.getLogger(__name__)
@@ -358,8 +359,15 @@ def UpdateTheContract(config, enclaves, contract, contract_invoker_keys) :
             test_list = list(reader)
 
         elif test_file.endswith('.json') :
+            # there is currently no support to set these values outside of the
+            # configuration file and that is not going to change soon
+            test_max_level = config.get('Test', {}).get('MaxLevel', 0)
+
             reader = json.load(efile)
             for test in reader :
+                if test.get('test-level', 0) > test_max_level :
+                    continue
+
                 method = test['MethodName']
                 pparms = test.get('PositionalParameters',[])
                 kparms = test.get('KeywordParameters',{})
@@ -371,6 +379,9 @@ def UpdateTheContract(config, enclaves, contract, contract_invoker_keys) :
 
     for test in test_list :
         expression = test['expression']
+
+        if test.get('description') :
+            logger.log(plogger.HIGHLIGHT,"TEST[{0}] : {1}".format(total_tests, test['description'].format(**test)))
 
         try :
             total_tests += 1
@@ -402,7 +413,6 @@ def UpdateTheContract(config, enclaves, contract, contract_invoker_keys) :
                 logger.warn('test failed: %s instead of %s', result, test['expected'])
 
         except Exception as e:
-            logger.exception("FOOOOO")
             logger.error('enclave failed to evaluate expression; %s', str(e))
             ErrorShutdown()
 
@@ -520,8 +530,6 @@ def Main() :
     global use_eservice
     global use_pservice
 
-    import pdo.common.config as pconfig
-    import pdo.common.logger as plogger
 
     # parse out the configuration file first
     conffiles = [ 'pcontract.toml', 'enclave.toml' ]

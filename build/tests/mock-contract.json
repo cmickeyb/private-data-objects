@@ -39,6 +39,6 @@
                 ]
             ]
         ],
-        "expected": "2"
+        "expected": "True"
     }
 ]

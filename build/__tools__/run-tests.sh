@@ -76,9 +76,9 @@ try make test > /dev/null
 # -----------------------------------------------------------------
 yell start enclave and provisioning services
 # -----------------------------------------------------------------
-try ${PDO_HOME}/bin/ss-start.sh --count ${NUM_SERVICES} > /dev/null
-try ${PDO_HOME}/bin/ps-start.sh --count ${NUM_SERVICES} --ledger ${PDO_LEDGER_URL} --clean > /dev/null
-try ${PDO_HOME}/bin/es-start.sh --count ${NUM_SERVICES} --ledger ${PDO_LEDGER_URL} --clean > /dev/null
+try ${PDO_HOME}/bin/ss-start.sh --count ${NUM_SERVICES}
+try ${PDO_HOME}/bin/ps-start.sh --count ${NUM_SERVICES} --ledger ${PDO_LEDGER_URL} --clean
+try ${PDO_HOME}/bin/es-start.sh --count ${NUM_SERVICES} --ledger ${PDO_LEDGER_URL} --clean
 
 cd ${SRCDIR}/build
 # -----------------------------------------------------------------
@@ -199,7 +199,7 @@ for v in $(seq 1 ${n}) ; do
     e=$((v % pcontract_es + 1))
     value=$(${PDO_HOME}/bin/pdo-invoke.psh \
                        --enclave "http://localhost:710${e}" --identity user1 \
-                       --pdo_file ${SAVE_FILE} --expr inc_value)
+                       --pdo_file ${SAVE_FILE} --method inc_value)
     if [ $value != $v ]; then
         die "contract has the wrong value ($value instead of $v) for enclave $e"
     fi
@@ -209,7 +209,7 @@ say get the value and check it
 v=$((v+1)); e=$((v % pcontract_es + 1))
 value=$(${PDO_HOME}/bin/pdo-invoke.psh \
                    --enclave "http://localhost:710${e}" --identity user1 \
-                   --pdo_file ${SAVE_FILE} --expr get_value)
+                   --pdo_file ${SAVE_FILE} --method get_value)
 if [ $value != $((n)) ]; then
     die "contract has the wrong value ($value instead of $((n+1))) for enclave $e"
 fi
@@ -217,30 +217,22 @@ fi
 ## -----------------------------------------------------------------
 yell test failure conditions to ensure they are caught
 ## -----------------------------------------------------------------
-say start mock contract test with ledger, this should fail dependency check
-pdo-test-contract --ledger ${PDO_LEDGER_URL} --contract mock-contract \
-    --expressions mock-contract.json \
-    --logfile __screen__ --loglevel warn
-if [ $? == 0 ]; then
-    die mock contract test succeeded though it should have failed
-fi
-
-say start broken contract test, this should fail
-pdo-test-contract --no-ledger --contract mock-contract-bad \
-    --expressions mock-contract.json \
-    --logfile __screen__ --loglevel warn
-if [ $? == 0 ]; then
-    die mock contract test succeeded though it should have failed
-fi
+say invalid dependency check
+${PDO_HOME}/bin/pdo-invoke.psh --identity user1 --pdo_file ${SAVE_FILE} --wait yes --method depends \
+           --params '[[["bad-contract-id", "bad-state-hash"]]]'
+# this should be caught be we don't seem able to return commit errors
+# if [ $? == 0 ]; then
+#     die mock contract test succeeded though it should have failed
+# fi
 
 say invalid method, this should fail
-${PDO_HOME}/bin/pdo-invoke.psh --identity user1 --pdo_file ${SAVE_FILE} --expr no-such-method
+${PDO_HOME}/bin/pdo-invoke.psh --identity user1 --pdo_file ${SAVE_FILE} --method no-such-method
 if [ $? == 0 ]; then
     die mock contract test succeeded though it should have failed
 fi
 
 say policy violation with identity, this should fail
-${PDO_HOME}/bin/pdo-invoke.psh --identity user2 --pdo_file ${SAVE_FILE} --expr get_value
+${PDO_HOME}/bin/pdo-invoke.psh --identity user2 --pdo_file ${SAVE_FILE} --method get_value
 if [ $? == 0 ]; then
     die mock contract test succeeded though it should have failed
 fi

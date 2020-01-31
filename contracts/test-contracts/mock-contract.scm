@@ -47,4 +47,4 @@
     (assert (string=? requestor creator) "only the creator can inc the value"))
   (let ((response (make-instance dispatch-package::response)))
     (send response 'add-dependency-vector dependencies)
-    (send response 'return-value value #f)))
+    (send response 'return-success #f)))
