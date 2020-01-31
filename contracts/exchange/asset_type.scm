@@ -26,7 +26,11 @@
 ;; CLASS: asset-type
 ;; =================================================================
 (define-class asset-type-contract
+  (class-vars
+   (interface-version 2))
+
   (instance-vars
+   (initialized #f)
    (asset-type-initialized #f)
    (name "")
    (description "")
@@ -34,8 +38,10 @@
    (creator "")))
 
 (define-method asset-type-contract (initialize-instance . args)
-  (if (string=? creator "")
-      (instance-set! self 'creator (get ':message 'originator))))
+  (if (not initialized)
+      (let* ((environment (car args)))
+        (instance-set! self 'creator (send environment 'get-originator-id))
+        (instance-set! self 'initialized #t))))
 
 ;; -----------------------------------------------------------------
 ;; NAME: initialize
@@ -48,8 +54,8 @@
 ;;     description -- extended description, string 256 characters or less
 ;;     link -- URL pointing to location for more information
 ;; -----------------------------------------------------------------
-(define-method asset-type-contract (initialize _name _description _link)
-  (assert (or (null? creator) (equal? creator (get ':message 'originator))) "only creator may initialize the type")
+(define-method asset-type-contract (initialize _environment _name _description _link)
+  (assert (equal? creator (send _environment 'get-originator-id)) "only creator may initialize the type")
   (assert (not asset-type-initialized) "asset type already initialized")
 
   (assert (and (string? _name) (<= (string-length _name) 32)) "invalid name")
@@ -61,22 +67,24 @@
   (instance-set! self 'link _link)
   (instance-set! self 'asset-type-initialized #t)
 
-  #t)
+  (dispatch-package::return-success #t))
 
-(define-const-method asset-type-contract (get-identifier)
+(define-method asset-type-contract (get-identifier _environment)
   (assert asset-type-initialized "asset type not initialized")
-  (get ':contract 'id))
+  (dispatch-package::return-value (send _environment 'get-contract-id) #f))
 
-(define-const-method asset-type-contract (get-name)
+(define-method asset-type-contract (get-name _environment)
   (assert asset-type-initialized "asset type not initialized")
-  name)
+  (dispatch-package::return-value name #f))
 
-(define-const-method asset-type-contract (get-description)
+(define-method asset-type-contract (get-description _environment)
   (assert asset-type-initialized "asset type not initialized")
-  description)
+  (dispatch-package::return-value description #f))
 
-(define-const-method asset-type-contract (get-link)
+(define-method asset-type-contract (get-link _environment)
   (assert asset-type-initialized "asset type not initialized")
-  link)
+  (dispatch-package::return-value link #f))
 
-(define-const-method asset-type-contract (get-creator) creator)
+(define-method asset-type-contract (get-creator _environment)
+  (assert asset-type-initialized "asset type not initialized")
+  (dispatch-package::return-value creator #f))
