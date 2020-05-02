@@ -36,38 +36,41 @@ def __command_vetting__(state, bindings, pargs) :
 
     subparsers = parser.add_subparsers(dest='command')
 
+    # common contract commands
     subparser = subparsers.add_parser('initialize')
-    subparser.add_argument('-t', '--type_id',
-                           help='contract identifier for the issuer asset type',
-                           type=invocation_parameter, required=True)
+    subparser.add_argument(
+        '-t', '--type_id',
+        help='contract identifier for the issuer asset type',
+        type=invocation_parameter, required=True)
 
     subparser = subparsers.add_parser('get_verifying_key')
-    subparser.add_argument('-s', '--symbol',
-                           help='binding symbol for result',
-                           type=str)
+    subparser.add_argument(
+        '-s', '--symbol',
+        help='binding symbol for result',
+        type=str)
 
+    # issuer authority commands
     subparser = subparsers.add_parser('get_asset_type_identifier')
-    subparser.add_argument('-s', '--symbol',
-                           help='binding symbol for result',
-                           type=str)
+    subparser.add_argument(
+        '-s', '--symbol',
+        help='binding symbol for result',
+        type=str)
 
-    subparser = subparsers.add_parser('approve')
-    subparser.add_argument('-i', '--issuer',
-                           help='identity of the issuer; ECDSA key',
-                           type=invocation_parameter, required=True)
-
-    subparser = subparsers.add_parser('get_authority')
-    subparser.add_argument('-s', '--symbol',
-                           help='binding symbol for result',
-                           type=str)
+    subparser = subparsers.add_parser('approve_issuer')
+    subparser.add_argument(
+        '-i', '--issuer',
+        help='identity of the issuer; ECDSA key',
+        type=invocation_parameter, required=True)
 
     subparser = subparsers.add_parser('get_issuer_authority')
-    subparser.add_argument('-s', '--symbol',
-                           help='binding symbol for result',
-                           type=str)
-    subparser.add_argument('-i', '--issuer',
-                           help='identity of the issuer; ECDSA key',
-                           type=invocation_parameter, required=True)
+    subparser.add_argument(
+        '-s', '--symbol',
+        help='binding symbol for result',
+        type=str)
+    subparser.add_argument(
+        '-i', '--issuer',
+        help='identity of the issuer; ECDSA key',
+        type=invocation_parameter, required=True)
 
     options = parser.parse_args(pargs)
 
@@ -98,18 +101,9 @@ def __command_vetting__(state, bindings, pargs) :
         return
 
     # -------------------------------------------------------
-    if options.command == 'approve' :
+    if options.command == 'approve_issuer' :
         message = invocation_request('add_approved_issuer', issuer_verifying_key=options.issuer)
         send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
-        return
-
-   # -------------------------------------------------------
-    if options.command == 'get_authority' :
-        extraparams['commit'] = False
-        message = invocation_request('get_authority')
-        result = send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
-        if options.symbol :
-            bindings.bind(options.symbol, result)
         return
 
    # -------------------------------------------------------

@@ -39,7 +39,7 @@
             }
         },
 
-        "get_identifier": {
+        "get_asset_type_identifier": {
             "//": "-----------------------------------------------------------------",
             "description": [
                 "returns the unique identifier for the asset type",

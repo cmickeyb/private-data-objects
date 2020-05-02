@@ -41,10 +41,10 @@ def __command_asset_type__(state, bindings, pargs) :
     subparser.add_argument('-n', '--name', help='human readable name', type=str, default='')
     subparser.add_argument('-l', '--link', help='URL where more information is located', type=str, default='')
 
-    subparser = subparsers.add_parser('get_identifier')
+    subparser = subparsers.add_parser('get_asset_type_identifier')
     subparser.add_argument('-s', '--symbol', help='binding symbol for result', type=str)
 
-    subparser = subparsers.add_parser('get_description')
+    subparser = subparsers.add_parser('describe')
     options = parser.parse_args(pargs)
 
     extraparams={'quiet' : options.quiet, 'wait' : options.wait}
@@ -56,9 +56,9 @@ def __command_asset_type__(state, bindings, pargs) :
         return
 
     # -------------------------------------------------------
-    if options.command == 'get_identifier' :
+    if options.command == 'get_asset_type_identifier' :
         extraparams['commit'] = False
-        message = invocation_request('get_identifier')
+        message = invocation_request('get_asset_type_identifier')
         result = send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
         if result and options.symbol :
             bindings.bind(options.symbol, result)
@@ -66,7 +66,7 @@ def __command_asset_type__(state, bindings, pargs) :
         return
 
     # -------------------------------------------------------
-    if options.command == 'get_description' :
+    if options.command == 'describe' :
         extraparams['quiet'] = True
         extraparams['commit'] = False
         message = invocation_request('get_name')

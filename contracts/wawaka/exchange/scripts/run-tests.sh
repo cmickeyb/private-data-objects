@@ -37,6 +37,9 @@ if [ ! -f ${PDO_HOME}/data/eservice-db.json ]; then
     scripts/create_eservice_db.psh
 fi
 
-yell asset_type test
-try scripts/asset_type_test.psh --loglevel info --ledger $PDO_LEDGER_URL -m color green
-try scripts/vetting_organization_test.psh --loglevel info --ledger $PDO_LEDGER_URL -m color green
+#yell asset_type test
+#try scripts/asset_type_test.psh --loglevel info --ledger $PDO_LEDGER_URL -m color green
+#try scripts/vetting_organization_test.psh --loglevel info --ledger $PDO_LEDGER_URL -m color green
+#try scripts/issuer_test.psh --loglevel info --ledger $PDO_LEDGER_URL -m color green
+
+try scripts/new_exchange_test.psh --loglevel info --ledger $PDO_LEDGER_URL

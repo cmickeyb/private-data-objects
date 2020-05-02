@@ -109,7 +109,7 @@ bool initialize(const Message& msg, const Environment& env, Response& rsp)
 }
 
 // -----------------------------------------------------------------
-// METHOD: get_identifier
+// METHOD: get_asset_type_identifier
 //   set asset type identifier
 //
 // JSON PARAMETERS:
@@ -118,7 +118,7 @@ bool initialize(const Message& msg, const Environment& env, Response& rsp)
 // RETURNS:
 //   asset type identifier (the contract id)
 // -----------------------------------------------------------------
-bool get_identifier(const Message& msg, const Environment& env, Response& rsp)
+bool get_asset_type_identifier(const Message& msg, const Environment& env, Response& rsp)
 {
     ASSERT_INITIALIZED(rsp);
     CONTRACT_SAFE_LOG(4, "get_identifier");
@@ -204,7 +204,7 @@ bool get_name(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 contract_method_reference_t contract_method_dispatch_table[] = {
     CONTRACT_METHOD(initialize),
-    CONTRACT_METHOD(get_identifier),
+    CONTRACT_METHOD(get_asset_type_identifier),
     CONTRACT_METHOD(get_description),
     CONTRACT_METHOD(get_link),
     CONTRACT_METHOD(get_name),
