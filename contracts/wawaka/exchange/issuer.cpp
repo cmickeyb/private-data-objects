@@ -65,6 +65,20 @@ bool initialize(const Message& msg, const Environment& env, Response& rsp)
 }
 
 // -----------------------------------------------------------------
+// METHOD: get_verifying_key
+//
+// JSON PARAMETERS:
+//   none
+//
+// RETURNS:
+//   ecdsa verifying key
+// -----------------------------------------------------------------
+bool get_verifying_key(const Message& msg, const Environment& env, Response& rsp)
+{
+    return ww::exchange::exchange_base::get_verifying_key(msg, env, rsp);
+}
+
+// -----------------------------------------------------------------
 // METHOD: get_asset_type_identifier
 //
 // JSON PARAMETERS:
@@ -229,6 +243,7 @@ bool claim(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 contract_method_reference_t contract_method_dispatch_table[] = {
     CONTRACT_METHOD(initialize),
+    CONTRACT_METHOD(get_verifying_key),
     CONTRACT_METHOD(get_asset_type_identifier),
     CONTRACT_METHOD(add_approved_issuer),
     CONTRACT_METHOD(get_issuer_authority),

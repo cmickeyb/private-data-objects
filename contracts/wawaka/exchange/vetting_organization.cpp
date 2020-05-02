@@ -119,8 +119,8 @@ bool get_issuer_authority(const Message& msg, const Environment& env, Response& 
 // -----------------------------------------------------------------
 contract_method_reference_t contract_method_dispatch_table[] = {
     CONTRACT_METHOD(initialize),
-    CONTRACT_METHOD(get_asset_type_identifier),
     CONTRACT_METHOD(get_verifying_key),
+    CONTRACT_METHOD(get_asset_type_identifier),
     CONTRACT_METHOD(add_approved_issuer),
     CONTRACT_METHOD(get_issuer_authority),
     { NULL, NULL }

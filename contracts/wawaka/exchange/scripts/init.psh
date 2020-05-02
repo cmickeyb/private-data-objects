@@ -16,7 +16,7 @@
 
 load_plugin -f plugins/asset_type.py
 load_plugin -f plugins/vetting.py
-## load_plugin -c issuer
+load_plugin -f plugins/issuer.py
 ## load_plugin -c exchange
 ## load_plugin -c auction
 

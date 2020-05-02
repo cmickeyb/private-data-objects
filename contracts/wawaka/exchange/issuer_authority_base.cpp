@@ -145,7 +145,7 @@ bool ww::exchange::issuer_authority_base::initialize_derived_authority(
         return rsp.error("failed to save authority chain; failed to store data");
 
     // Save the asset type identifier
-    const StringArray asset_type_id(authority_chain.get_string("asset_type_id"));
+    const StringArray asset_type_id(authority_chain.get_string("asset_type_identifier"));
     if (! issuer_authority_common_store.set(md_asset_type_id_key, asset_type_id))
         return rsp.error("failed to store the asset type id");
 
