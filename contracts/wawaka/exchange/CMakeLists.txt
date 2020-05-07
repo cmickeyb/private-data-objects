@@ -14,9 +14,9 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2 FATAL_ERROR)
 
-FILE(GLOB COMMON_EXCHANGE_SOURCE exchange_base.cpp common/*.cpp)
-SET(ISSUER_AUTHORITY_BASE issuer_authority_base.cpp)
+FILE(GLOB COMMON_EXCHANGE_SOURCE contracts/exchange_base.cpp contracts/common/*.cpp)
+SET(ISSUER_AUTHORITY_BASE contracts/issuer_authority_base.cpp)
 
-BUILD_CONTRACT(asset_type asset_type.cpp ${COMMON_EXCHANGE_SOURCE})
-BUILD_CONTRACT(vetting_organization vetting_organization.cpp ${ISSUER_AUTHORITY_BASE} ${COMMON_EXCHANGE_SOURCE})
-BUILD_CONTRACT(issuer issuer.cpp ${ISSUER_AUTHORITY_BASE} ${COMMON_EXCHANGE_SOURCE})
+BUILD_CONTRACT(asset_type contracts/asset_type.cpp ${COMMON_EXCHANGE_SOURCE})
+BUILD_CONTRACT(vetting_organization contracts/vetting_organization.cpp ${ISSUER_AUTHORITY_BASE} ${COMMON_EXCHANGE_SOURCE})
+BUILD_CONTRACT(issuer contracts/issuer.cpp ${ISSUER_AUTHORITY_BASE} ${COMMON_EXCHANGE_SOURCE})
