@@ -21,8 +21,8 @@ def run(args):
     num_pings = args.num_pings
     host = args.host
     port = 6006
-    cert = "./user1_cert.pem"
-    key = "./user1_privk.pem"
+    cert = "./user0_cert.pem"
+    key = "./user0_privk.pem"
     cafile="./networkcert.pem"
     format = "json"
 
