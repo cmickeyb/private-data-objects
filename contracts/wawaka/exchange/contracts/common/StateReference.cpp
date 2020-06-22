@@ -52,3 +52,15 @@ bool ww::exchange::StateReference::validate(void) const
 
     return validate_schema(state_reference_schema);
 }
+
+// -----------------------------------------------------------------
+bool ww::exchange::StateReference::add_to_response(Response& rsp) const
+{
+    if (! validate())
+        return false;
+
+    const char* contract_id = get_string("contract_id");
+    const char* state_hash = get_string("state_hash");
+
+    return rsp.add_dependency(contract_id, state_hash);
+}

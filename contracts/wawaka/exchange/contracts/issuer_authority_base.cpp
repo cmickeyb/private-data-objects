@@ -179,7 +179,7 @@ bool ww::exchange::issuer_authority_base::get_asset_type_identifier(
     ASSERT_INITIALIZED(rsp);
 
     StringArray asset_type_identifier;
-    if (! issuer_authority_common_store.get(md_asset_type_id_key, asset_type_identifier))
+    if (! ww::exchange::issuer_authority_base::get_asset_type_identifier(asset_type_identifier))
         return rsp.error("contract state corrupted, no asset type identifier");
 
     ww::value::String v((char*)asset_type_identifier.value_);
@@ -296,4 +296,18 @@ bool ww::exchange::issuer_authority_base::get_issuer_authority(
         return rsp.error("failed to create issuer authority chain");
 
     return rsp.value(authority_chain, false);
+}
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// UTILITY FUNCTIONS
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+// -----------------------------------------------------------------
+bool ww::exchange::issuer_authority_base::get_asset_type_identifier(
+    StringArray& asset_type_identifier)
+{
+    if (! issuer_authority_common_store.get(md_asset_type_id_key, asset_type_identifier))
+        return false;
+
+    return true;
 }
