@@ -31,8 +31,10 @@
 #include "issuer_authority_base.h"
 
 #include "common/AuthoritativeAsset.h"
+#include "common/LedgerEntry.h"
+#include "common/LedgerStore.h"
 
-static KeyValueStore ledger_store("ledger");
+static ww::exchange::LedgerStore ledger_store("ledger");
 
 // -----------------------------------------------------------------
 // METHOD: initialize_contract
@@ -144,8 +146,32 @@ bool get_authority(const Message& msg, const Environment& env, Response& rsp)
 // RETURNS:
 //   boolean
 // -----------------------------------------------------------------
+#define ISSUE_PARAMETER_SCHEMA "{\"owner_identity\":\"\", \"count\":0}"
+
 bool issue(const Message& msg, const Environment& env, Response& rsp)
 {
+    ASSERT_SENDER_IS_OWNER(env, rsp);
+    ASSERT_INITIALIZED(rsp);
+
+    if (! msg.validate_schema(ISSUE_PARAMETER_SCHEMA))
+        return rsp.error("invalid request, missing required parameters");
+
+    // in theory, owner is an escda key, in practice it could be anything
+    // but only an ecdsa key can be used meaningfully
+    const StringArray owner(msg.get_string("owner_identity"));
+    if (owner.size() == 0)
+        return rsp.error("invalid request, invalid owner identity parameter");
+
+    if (ledger_store.exists(owner))
+        return rsp.error("invalid request, duplicate issuance");
+
+    const int count = (int) msg.get_number("count");
+    if (count <= 0)
+        return rsp.error("invalid request, invalid asset count");
+
+    if (! ledger_store.add(owner, (uint32_t)count))
+        return rsp.error("ledger operation failed, unable to save issuance");
+
     return rsp.success(true);
 }
 
@@ -160,9 +186,18 @@ bool issue(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 bool get_balance(const Message& msg, const Environment& env, Response& rsp)
 {
-    ww::value::Number balance(0);
+    ASSERT_INITIALIZED(rsp);
 
-    return rsp.value(balance, false);
+    const StringArray owner(env.originator_id_);
+
+    uint32_t balance = 0;
+
+    ww::exchange::LedgerEntry entry;
+    if (ledger_store.get(owner, entry))
+        balance = entry.get_count();
+
+    ww::value::Number balance_value(balance);
+    return rsp.value(balance_value, false);
 }
 
 // -----------------------------------------------------------------
@@ -175,8 +210,59 @@ bool get_balance(const Message& msg, const Environment& env, Response& rsp)
 // RETURNS:
 //   boolean
 // -----------------------------------------------------------------
+#define TRANSFER_PARAMETER_SCHEMA "{\"new_owner_identity\":\"\", \"count\":0}"
+
 bool transfer(const Message& msg, const Environment& env, Response& rsp)
 {
+    ASSERT_INITIALIZED(rsp);
+
+    if (! msg.validate_schema(TRANSFER_PARAMETER_SCHEMA))
+        return rsp.error("invalid request, missing required parameters");
+
+    const int count = (int) msg.get_number("count");
+    if (count <= 0)
+        return rsp.error("invalid transfer request, invalid asset count");
+
+    const StringArray new_owner(msg.get_string("new_owner_identity"));
+    if (new_owner.size() == 0)
+        return rsp.error("invalid transfer request, invalid owner identity parameter");
+
+    const StringArray old_owner(env.originator_id_);
+
+    // if there is no issuance for this identity, we treat it as a 0 balance
+    ww::exchange::LedgerEntry old_entry;
+
+    if (! ledger_store.get(old_owner, old_entry))
+        return rsp.error("transfer failed, insufficient balance for transfer");
+
+    if (old_entry.get_count() < count)
+        return rsp.error("transfer failed, insufficient balance for transfer");
+
+    if (! old_entry.is_active())
+        return rsp.error("transfer failed, old assets are escrowed");
+
+    // in theory, owner is an escda key, in practice it could be anything
+    // but only an ecdsa key can be used meaningfully
+    if (! ledger_store.exists(new_owner))
+        if (! ledger_store.add(new_owner, 0))
+            return rsp.error("transfer failed, failed to add new owner");
+
+    ww::exchange::LedgerEntry new_entry;
+    if (! ledger_store.get(new_owner, new_entry))
+        return rsp.error("transfer failed, failed to find new owner");
+
+    if (! new_entry.is_active())
+        return rsp.error("invalid transfer request, new assets are escrowed");
+
+    // after all the set up, finally transfer the assets
+    old_entry.set_count(old_entry.get_count() - (uint32_t)count);
+    if (! ledger_store.set(old_owner, old_entry))
+        return rsp.error("transfer failed, unable to update old entry");
+
+    new_entry.set_count(new_entry.get_count() + (uint32_t)count);
+    if (! ledger_store.set(new_owner, new_entry))
+        return rsp.error("transfer failed, unable to update new entry");
+
     return rsp.success(true);
 }
 
@@ -189,8 +275,33 @@ bool transfer(const Message& msg, const Environment& env, Response& rsp)
 // RETURNS:
 //   boolean
 // -----------------------------------------------------------------
+#define ESCROW_PARAMETER_SCHEMA "{\"escrow_agent_identity\":\"\"}"
+
 bool escrow(const Message& msg, const Environment& env, Response& rsp)
 {
+    ASSERT_INITIALIZED(rsp);
+
+    if (! msg.validate_schema(ESCROW_PARAMETER_SCHEMA))
+        return rsp.error("invalid escrow request, missing required parameters");
+
+    ww::value::String escrow_agent(msg.get_string("escrow_agent_identity"));
+
+    const StringArray owner(env.originator_id_);
+
+    // if there is no issuance for this identity, we treat it as a 0 balance
+    ww::exchange::LedgerEntry entry;
+
+    if (! ledger_store.get(owner, entry))
+        return rsp.error("escrow failed, no entry for requestor");
+
+    if (! entry.is_active())
+        return rsp.error("escrow failed, assets are already escrowed");
+
+    entry.set_inactive(escrow_agent);
+
+    if (! ledger_store.set(owner, entry))
+        return rsp.error("escrow failed, unable to update entry");
+
     return rsp.success(true);
 }
 
@@ -205,6 +316,18 @@ bool escrow(const Message& msg, const Environment& env, Response& rsp)
 // -----------------------------------------------------------------
 bool escrow_attestation(const Message& msg, const Environment& env, Response& rsp)
 {
+    ASSERT_INITIALIZED(rsp);
+
+    const StringArray owner(env.originator_id_);
+
+    // if there is no issuance for this identity, we treat it as a 0 balance
+    ww::exchange::LedgerEntry entry;
+    if (! ledger_store.get(owner, entry))
+        return rsp.error("invalid escrow attestation request; no entry for requestor");
+
+    if (entry.is_active())
+        return rsp.error("invalid escrow attestation request, asset is not in escrow");
+
     ww::exchange::AuthoritativeAsset asset;
 
     return rsp.value(asset, false);
@@ -220,8 +343,48 @@ bool escrow_attestation(const Message& msg, const Environment& env, Response& rs
 // RETURNS:
 //   boolean
 // -----------------------------------------------------------------
+#define DISBURSE_PARAMETER_SCHEMA "{"                                   \
+    "\"escrow_agent_state_reference\":" STATE_REFERENCE_SCHEMA ","      \
+    SCHEMA_KW(escrow_agent_signature,"")                                \
+    "}"
+
 bool disburse(const Message& msg, const Environment& env, Response& rsp)
 {
+    ASSERT_INITIALIZED(rsp);
+
+    if (! msg.validate_schema(DISBURSE_PARAMETER_SCHEMA))
+        return rsp.error("invalid request, missing required parameters");
+
+    const StringArray owner(env.originator_id_);
+
+    ww::exchange::LedgerEntry entry;
+    if (! ledger_store.get(owner, entry))
+        return rsp.error("invalid disburse request, no entry for requestor");
+
+    if (entry.is_active())
+        return rsp.error("invalid disburse request, assets are not escrowed");
+
+    // verify that escrow agent signature
+    const StringArray signature(msg.get_string("escrow_agent_signature"));
+    const StringArray escrow_agent(entry.get_escrow_agent_identity());
+
+    // create the authoritative asset
+
+    // verify the signature
+
+    // now modify the entry to mark it as active
+    entry.set_active();
+    if (! ledger_store.set(owner, entry))
+        return rsp.error("escrow failed, unable to update entry");
+
+    // add the dependency to the response
+    const ww::exchange::StateReference escrow_state_reference;
+    if (! msg.get("escrow_agent_state_reference", escrow_state_reference))
+        return rsp.error("invalid disburse request, missing state reference");
+
+    if (! escrow_state_reference.add_to_response(rsp))
+        return rsp.error("disburse request failed, unable to save state reference");
+
     return rsp.success(true);
 }
 

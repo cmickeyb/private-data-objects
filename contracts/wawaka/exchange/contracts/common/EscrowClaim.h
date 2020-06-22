@@ -21,7 +21,7 @@
 #include "StateReference.h"
 
 #define ESCROW_CLAIM_SCHEMA "{"                                         \
-    SCHEMA_KW("old_owner_identity","") ","                              \
+    SCHEMA_KW(old_owner_identity,"") ","                              \
     "\"escrow_agent_state_reference\":" STATE_REFERENCE_SCHEMA ","      \
     SCHEMA_KW(escrow_agent_signature,"")                                \
     "}"

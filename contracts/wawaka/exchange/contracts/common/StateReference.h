@@ -16,6 +16,7 @@
 #pragma once
 
 #include "Environment.h"
+#include "Response.h"
 #include "Value.h"
 
 #include "Common.h"
@@ -40,6 +41,8 @@ namespace exchange
         bool set_state_hash(const ww::value::String& value);
 
         bool validate(void) const;
+
+        bool add_to_response(Response& rsp) const;
 
         StateReference(void);
         StateReference(const Environment& env);

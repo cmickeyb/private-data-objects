@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "Environment.h"
 #include "Message.h"
 #include "Response.h"
+#include "StringArray.h"
 
 #define ASSERT_INITIALIZED(_rsp)                                \
     do {                                                        \

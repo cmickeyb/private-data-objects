@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "Environment.h"
 #include "Message.h"
 #include "Response.h"
+#include "StringArray.h"
 
 namespace ww
 {
@@ -34,6 +37,9 @@ namespace issuer_authority_base
     bool get_authority(const Message& msg, const Environment& env, Response& rsp);
     bool add_approved_issuer(const Message& msg, const Environment& env, Response& rsp);
     bool get_issuer_authority(const Message& msg, const Environment& env, Response& rsp);
+
+    // utility functions
+    bool get_asset_type_identifier(StringArray& asset_type_identifier)
 
 }; // issuer_authority
 }; // exchange
