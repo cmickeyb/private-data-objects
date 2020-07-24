@@ -290,7 +290,7 @@ int ww::value::Object::get_boolean(const char* key) const
 // -----------------------------------------------------------------
 bool ww::value::Object::get_value(const char* name, ww::value::Value& value) const
 {
-    const JSON_Value *json_value = json_object_get_value(json_object(value_), name);
+    const JSON_Value *json_value = json_object_dotget_value(json_object(value_), name);
     if (json_value == NULL)
         return false;
 
