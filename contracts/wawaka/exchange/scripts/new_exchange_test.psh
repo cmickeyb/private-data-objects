@@ -24,6 +24,12 @@ set -q --conditional -s data -v .
 set -q --conditional -s save -v .
 script -f ${path}/init.psh
 
+set -q -s _user1_key -i user1
+set -q -s _user2_key -i user2
+set -q -s _user3_key -i user3
+set -q -s _user4_key -i user4
+set -q -s _user5_key -i user5
+
 ## =================================================================
 echo create the asset type for green marbles
 ## =================================================================
@@ -86,5 +92,74 @@ if --not -e ${_authority_} ${_tmp_}
    echo authority does not match
    exit -v -1
 fi
+
+issuer -q -w -f ${save}/green_issuer.pdo issue -o ${_user1_key} -c 51
+issuer -q -w -f ${save}/green_issuer.pdo issue -o ${_user2_key} -c 52
+issuer -q -w -f ${save}/green_issuer.pdo issue -o ${_user3_key} -c 53
+issuer -q -w -f ${save}/green_issuer.pdo issue -o ${_user4_key} -c 54
+issuer -q -w -f ${save}/green_issuer.pdo issue -o ${_user5_key} -c 55
+
+identity -n user1
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 51
+   echo balance does not match, ${_balance}
+   exit -v -1
+fi
+echo user1 balance matched
+
+identity -n user2
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 52
+   echo balance does not match, ${_balance}
+   exit -v -1
+fi
+echo user2 balance matched
+
+identity -n user3
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 53
+   echo balance does not match, ${_balance}
+   exit -v -1
+fi
+echo user3 balance matched
+
+identity -n user4
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 54
+   echo balance does not match, ${_balance}
+   exit -v -1
+fi
+echo user4 balance matched
+
+identity -n user5
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 55
+   echo balance does not match, ${_balance}
+   exit -v -1
+fi
+echo user5 balance matched
+
+identity -n user1
+issuer -q -w -f ${save}/green_issuer.pdo transfer -n ${_user2_key} -c 50
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 1
+   echo transfer source balance does not match, ${_balance} not 1
+   exit -v -1
+fi
+
+identity -n user2
+issuer -q -f ${save}/green_issuer.pdo get_balance -s _balance
+if --not -e ${_balance} 102
+   echo transfer destination balance does not match, ${_balance} not 102
+   exit -v -1
+fi
+
+echo transfer balance matched
+
+# still to test:
+# escrow
+# escrow attestation
+# disburse
+# claim
 
 exit

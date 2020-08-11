@@ -191,13 +191,13 @@ def __command_issuer__(state, bindings, pargs) :
 
     # -------------------------------------------------------
     if options.command == 'issue' :
-        message = invocation_request('issue', options.owner, options.count)
+        message = invocation_request('issue', owner_identity=options.owner, count=options.count)
         send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
         return
 
     # -------------------------------------------------------
     if options.command == 'transfer' :
-        message = invocation_request('transfer', options.new_owner, options.count)
+        message = invocation_request('transfer', new_owner_identity=options.new_owner, count=options.count)
         send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
         return
 
@@ -205,7 +205,7 @@ def __command_issuer__(state, bindings, pargs) :
     if options.command == 'escrow' :
         extraparams['commit'] = True
         extraparams['wait'] = True
-        message = invocation_request('escrow', options.agent)
+        message = invocation_request('escrow', escrow_agent_identity=options.agent)
         result = send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
 
         extraparams['commit'] = False

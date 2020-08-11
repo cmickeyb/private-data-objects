@@ -39,7 +39,7 @@ namespace issuer_authority_base
     bool get_issuer_authority(const Message& msg, const Environment& env, Response& rsp);
 
     // utility functions
-    bool get_asset_type_identifier(StringArray& asset_type_identifier)
+    bool get_asset_type_identifier(StringArray& asset_type_identifier);
 
 }; // issuer_authority
 }; // exchange

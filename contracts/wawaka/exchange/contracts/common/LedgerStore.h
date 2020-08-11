@@ -29,9 +29,9 @@ namespace exchange
     class LedgerStore : public KeyValueStore
     {
     public:
-        bool add(const StringArray& identity, uint32_t count) const;
-        bool get(const StringArray& identity, ww::exchange::LedgerEntry& value) const;
-        bool set(const StringArray& identity, const ww::exchange::LedgerEntry& value) const;
+        bool add_entry(const StringArray& identity, uint32_t count) const;
+        bool get_entry(const StringArray& identity, ww::exchange::LedgerEntry& value) const;
+        bool set_entry(const StringArray& identity, const ww::exchange::LedgerEntry& value) const;
         bool exists(const StringArray& identity) const;
 
         LedgerStore(const char* prefix) : KeyValueStore(prefix) {};

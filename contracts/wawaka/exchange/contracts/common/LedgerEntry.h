@@ -20,9 +20,17 @@
 #include "Asset.h"
 #include "Common.h"
 
-#define LEDGER_ENTRY_SCHEMA "{"                 \
+#define LEDGER_ENTRY_SCHEMA_BACKUP "{"                 \
     SCHEMA_KW(active, true) ","                 \
     "\"asset\":" ASSET_SCHEMA                   \
+    "}"
+
+#define LEDGER_ENTRY_SCHEMA "{"                 \
+    SCHEMA_KW(active, true) ","                 \
+    SCHEMA_KW(count,0) ","                      \
+    SCHEMA_KW(owner_identity,"") ","            \
+    SCHEMA_KW(escrow_agent_identity,"") ","     \
+    SCHEMA_KW(escrow_identifier,"")             \
     "}"
 
 namespace ww
@@ -38,7 +46,7 @@ namespace exchange
         bool set_inactive(const ww::value::String& escrow_agent_identity);
 
         uint32_t get_count(void) const;
-        bool set_count(const uint32_t count) const;
+        bool set_count(const uint32_t count);
 
         const char* get_owner_identity(void) const;
         bool get_owner_identity(ww::value::String& value) const;

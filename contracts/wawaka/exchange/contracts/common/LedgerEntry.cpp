@@ -43,7 +43,7 @@ ww::exchange::LedgerEntry::LedgerEntry(const StringArray& serialized) :
 // -----------------------------------------------------------------
 bool ww::exchange::LedgerEntry::is_active(void) const
 {
-    ww::value::Boolean flag;
+    ww::value::Boolean flag(true);
     if (! get_value("active", flag))
         return false;
 
@@ -88,29 +88,38 @@ uint32_t ww::exchange::LedgerEntry::get_count(void) const
 }
 
 // -----------------------------------------------------------------
-bool ww::exchange::LedgerEntry::set_count(uint32_t count) const
+bool ww::exchange::LedgerEntry::set_count(uint32_t count)
 {
     ww::value::Number value(count);
     return set_value("count", value);
 }
 
 // -----------------------------------------------------------------
-const char* get_owner_identity(void) const
+const char* ww::exchange::LedgerEntry::get_owner_identity(void) const
 {
     return get_string("owner_identity");
 }
 
+SIMPLE_PROPERTY_GET(LedgerEntry, owner_identity, ww::value::String);
+SIMPLE_PROPERTY_SET(LedgerEntry, owner_identity, ww::value::String);
+
 // -----------------------------------------------------------------
-const char* get_escrow_agent_identity(void) const
+const char* ww::exchange::LedgerEntry::get_escrow_agent_identity(void) const
 {
     return get_string("escrow_agent_identity");
 }
 
+SIMPLE_PROPERTY_GET(LedgerEntry, escrow_agent_identity, ww::value::String);
+SIMPLE_PROPERTY_SET(LedgerEntry, escrow_agent_identity, ww::value::String);
+
 // -----------------------------------------------------------------
-const char* get_escrow_identifier(void) const
+const char* ww::exchange::LedgerEntry::get_escrow_identifier(void) const
 {
     return get_string("escrow_identifier");
 }
+
+SIMPLE_PROPERTY_GET(LedgerEntry, escrow_identifier, ww::value::String);
+SIMPLE_PROPERTY_SET(LedgerEntry, escrow_identifier, ww::value::String);
 
 // -----------------------------------------------------------------
 bool ww::exchange::LedgerEntry::initialize_escrow_identifier(void)
@@ -126,15 +135,6 @@ bool ww::exchange::LedgerEntry::initialize_escrow_identifier(void)
         return false;
 
     // and save it in the ledger entry
-    ww::value::String id_string((const char*)encode.c_data());
+    ww::value::String id_string((const char*)encoded.c_data());
     return set_escrow_identifier(id_string);
 }
-
-// -----------------------------------------------------------------
-SIMPLE_PROPERTY_GET(Asset, owner_identity, ww::value::String);
-SIMPLE_PROPERTY_GET(Asset, escrow_agent_identity, ww::value::String);
-SIMPLE_PROPERTY_GET(Asset, escrow_identifier, ww::value::String);
-
-SIMPLE_PROPERTY_SET(Asset, owner_identity, ww::value::String);
-SIMPLE_PROPERTY_SET(Asset, escrow_agent_identity, ww::value::String);
-SIMPLE_PROPERTY_SET(Asset, escrow_identifier, ww::value::String);

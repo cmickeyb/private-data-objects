@@ -23,24 +23,26 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool ww::exchange::LedgerStore::exists(const StringArray& owner_identity) const
 {
-    StringArray serialized_value;
-    return get(owner_identity, serialized_value);
+    StringArray serialized_entry;
+    return get(owner_identity, serialized_entry);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-bool ww::exchange::LedgerStore::get(const StringArray& owner_identity, ww::exchange::LedgerEntry& value) const
+bool ww::exchange::LedgerStore::get_entry(
+    const StringArray& owner_identity,
+    ww::exchange::LedgerEntry& value) const
 {
-    StringArray serialized_value;
-    if (! get(owner_identity, serialized_value))
+    StringArray serialized_entry;
+    if (! get(owner_identity, serialized_entry))
         return false;
 
-    if (! serialized_value.null_terminated())
+    if (! serialized_entry.null_terminated())
     {
         CONTRACT_SAFE_LOG(1, "stored ledger entry is not null terminated");
         return false;
     }
 
-    if (! value.deserialize((const char*)serialized_value.c_data()))
+    if (! value.deserialize((const char*)serialized_entry.c_data()))
     {
         CONTRACT_SAFE_LOG(1, "stored ledger entry is not formatted correctly");
         return false;
@@ -50,20 +52,22 @@ bool ww::exchange::LedgerStore::get(const StringArray& owner_identity, ww::excha
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-bool ww::exchange::LedgerStore::set(const StringArray& owner_identity, const ww::exchange::LedgerEntry& value) const
+bool ww::exchange::LedgerStore::set_entry(
+    const StringArray& owner_identity,
+    const ww::exchange::LedgerEntry& value) const
 {
-    StringArray serialized_value;
-    if (! value.serialize(serialized_value))
+    StringArray serialized_entry;
+    if (! value.serialize(serialized_entry))
     {
         CONTRACT_SAFE_LOG(1, "ledger entry failed to serialize");
         return false;
     }
 
-    return set(owner_identity, serialized_value);
+    return set(owner_identity, serialized_entry);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-bool ww::exchange::LedgerStore::add(const StringArray& owner_identity, uint32_t count) const
+bool ww::exchange::LedgerStore::add_entry(const StringArray& owner_identity, uint32_t count) const
 {
     const ww::value::String owner_string((const char*)owner_identity.c_data());
 
@@ -74,5 +78,5 @@ bool ww::exchange::LedgerStore::add(const StringArray& owner_identity, uint32_t 
     entry.set_escrow_agent_identity(owner_string);
     entry.initialize_escrow_identifier();
 
-    return ledger_store.set(owner_identity, entry);
+    return set_entry(owner_identity, entry);
 }
