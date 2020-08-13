@@ -56,6 +56,7 @@ static const StringArray md_authority_chain_key("authority_chain");
 // RETURNS:
 //   true if asset type id successfully saved
 // -----------------------------------------------------------------
+#define INITIALIZE_ROOT_AUTHORITY_SCHEMA "{\"asset_type_identifier\":\"\"}"
 bool ww::exchange::issuer_authority_base::initialize_root_authority(
     const Message& msg,
     const Environment& env,
@@ -66,7 +67,7 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
     ASSERT_SENDER_IS_OWNER(env, rsp);
     ASSERT_UNINITIALIZED(rsp);
 
-    if (! msg.validate_schema("{\"asset_type_identifier\":\"\"}"))
+    if (! msg.validate_schema(INITIALIZE_ROOT_AUTHORITY_SCHEMA))
         return rsp.error("invalid request, missing required parameters");
 
     // Set the asset type
@@ -88,6 +89,7 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
     // Save the serialized authority object
     ww::exchange::IssuerAuthorityChain authority_chain(asset_type_identifier_string, verifying_key_string);
 
+#if 0
     StringArray serialized_authority_chain;
     if (! authority_chain.serialize(serialized_authority_chain))
         return rsp.error("failed to save authority chain; serialization failed");
@@ -96,6 +98,7 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
         return rsp.error("failed to save authority chain; failed to store data");
 
     CONTRACT_SAFE_LOG(3, "AUTHORITY: %s", (const char*)serialized_authority_chain.c_data());
+#endif
 
     // Mark as initialized
     ww::exchange::exchange_base::mark_initialized();

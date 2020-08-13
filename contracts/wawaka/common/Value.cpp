@@ -309,17 +309,24 @@ bool ww::value::Object::set_value(const char* name, const ww::value::Value& valu
     if (name == NULL)
         return false;
 
-    JSON_Value *json_value = json_value_deep_copy(value.get());
-    if (json_value == NULL)
+    const JSON_Value *old_json_value = value.get();
+    if (old_json_value == NULL)
+    {
+        CONTRACT_SAFE_LOG(1, "unable to set value for NULL object");
+        return false;
+    }
+
+    JSON_Value *new_json_value = json_value_deep_copy(old_json_value);
+    if (new_json_value == NULL)
     {
         CONTRACT_SAFE_LOG(1, "object set value; allocation failed");
         return false;
     }
 
-    if (json_object_set_value(json_object(value_), name, json_value) != JSONSuccess)
+    if (json_object_set_value(json_object(value_), name, new_json_value) != JSONSuccess)
     {
         CONTRACT_SAFE_LOG(1, "object set value; failed to save property %s", name);
-        free(json_value);
+        free(new_json_value);
         return false;
     }
 
