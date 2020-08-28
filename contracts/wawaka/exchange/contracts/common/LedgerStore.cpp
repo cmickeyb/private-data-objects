@@ -38,7 +38,7 @@ bool ww::exchange::LedgerStore::get_entry(
 
     if (! serialized_entry.null_terminated())
     {
-        CONTRACT_SAFE_LOG(1, "stored ledger entry is not null terminated");
+        CONTRACT_SAFE_LOG(1, "stored ledger entry is not null terminated; %zu", serialized_entry.size());
         return false;
     }
 

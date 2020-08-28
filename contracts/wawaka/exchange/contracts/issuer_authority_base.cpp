@@ -70,6 +70,13 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
     if (! msg.validate_schema(INITIALIZE_ROOT_AUTHORITY_SCHEMA))
         return rsp.error("invalid request, missing required parameters");
 
+    // Build the root authority chain and save it in the metadata
+    StringArray verifying_key;
+    if (! ww::exchange::exchange_base::get_verifying_key(verifying_key))
+        return rsp.error("corrupted state; verifying key not found");
+
+    ww::value::String verifying_key_string((const char*)verifying_key.c_data());
+
     // Set the asset type
     const ww::value::String asset_type_identifier_string(msg.get_string("asset_type_identifier"));
     if (asset_type_identifier_string.is_null())
@@ -79,17 +86,9 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
     if (! issuer_authority_common_store.set(md_asset_type_id_key, asset_type_identifier))
         return rsp.error("failed to store the asset type id");
 
-    // Build the root authority chain and save it in the metadata
-    StringArray verifying_key;
-    if (! ww::exchange::exchange_base::get_verifying_key(verifying_key))
-        return rsp.error("corrupted state; verifying key not found");
-
-    ww::value::String verifying_key_string((const char*)verifying_key.c_data());
-
     // Save the serialized authority object
     ww::exchange::IssuerAuthorityChain authority_chain(asset_type_identifier_string, verifying_key_string);
 
-#if 0
     StringArray serialized_authority_chain;
     if (! authority_chain.serialize(serialized_authority_chain))
         return rsp.error("failed to save authority chain; serialization failed");
@@ -98,7 +97,6 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
         return rsp.error("failed to save authority chain; failed to store data");
 
     CONTRACT_SAFE_LOG(3, "AUTHORITY: %s", (const char*)serialized_authority_chain.c_data());
-#endif
 
     // Mark as initialized
     ww::exchange::exchange_base::mark_initialized();

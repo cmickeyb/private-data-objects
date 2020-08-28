@@ -44,8 +44,9 @@ bool KeyValueStore::make_key(const StringArray& key, StringArray& prefixed_key) 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool KeyValueStore::get(const StringArray& key, uint32_t& val) const
 {
-    StringArray prefixed_key(1);
-    make_key(key, prefixed_key);
+    StringArray prefixed_key;
+    if (! make_key(key, prefixed_key))
+        return false;
 
     uint8_t* datap;
     size_t size;
@@ -53,9 +54,17 @@ bool KeyValueStore::get(const StringArray& key, uint32_t& val) const
     if (! key_value_get(prefixed_key.c_data(), prefixed_key.size(), &datap, &size))
         return false;
 
+    if (datap == NULL)
+    {
+        CONTRACT_SAFE_LOG(3, "data allocation failed");
+        return false;
+    }
+
     if (size != sizeof(uint32_t))
     {
         CONTRACT_SAFE_LOG(3, "wrong size for integer:%lu", size);
+
+        free(datap);
         return false;
     }
 
@@ -70,8 +79,9 @@ bool KeyValueStore::get(const StringArray& key, uint32_t& val) const
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool KeyValueStore::set(const StringArray& key, const uint32_t val) const
 {
-    StringArray prefixed_key(1);
-    make_key(key, prefixed_key);
+    StringArray prefixed_key;
+    if (! make_key(key, prefixed_key))
+        return false;
 
     return key_value_set(prefixed_key.c_data(), prefixed_key.size(), (uint8_t*)&val, sizeof(val));
 }
@@ -79,8 +89,9 @@ bool KeyValueStore::set(const StringArray& key, const uint32_t val) const
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool KeyValueStore::get(const StringArray& key, StringArray& val) const
 {
-    StringArray prefixed_key(1);
-    make_key(key, prefixed_key);
+    StringArray prefixed_key;
+    if (! make_key(key, prefixed_key))
+        return false;
 
     uint8_t* datap;
     size_t size;
@@ -88,15 +99,29 @@ bool KeyValueStore::get(const StringArray& key, StringArray& val) const
     if (! key_value_get(prefixed_key.c_data(), prefixed_key.size(), &datap, &size))
         return false;
 
-    val.take(datap, size);
+    // return val.take(datap, size);
+
+    // this should not happen if the result was true
+    if (datap == NULL)
+        return false;
+
+    if (! val.assign(datap, size))
+    {
+        CONTRACT_SAFE_LOG(3, "failed to save value");
+        free(datap);
+        return false;
+    }
+
+    free(datap);
     return true;
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool KeyValueStore::set(const StringArray& key, const StringArray& val) const
 {
-    StringArray prefixed_key(1);
-    make_key(key, prefixed_key);
+    StringArray prefixed_key;
+    if (! make_key(key, prefixed_key))
+        return false;
 
     return key_value_set(prefixed_key.c_data(), prefixed_key.size(), val.c_data(), val.size());
 }

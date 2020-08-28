@@ -93,7 +93,7 @@ bool ww::value::Value::deserialize(const char* value)
     if (json_value_get_type(json_value) != expected_value_type_)
     {
         CONTRACT_SAFE_LOG(3, "value deserialize; type mismatch on objects");
-        free(json_value);
+        json_value_free(json_value);
         return false;
     }
 
@@ -116,22 +116,17 @@ bool ww::value::Value::serialize(StringArray& result) const
 
     // serialize the result
     size_t serialized_size = json_serialization_size(value_);
-    char *serialized_response = (char *)malloc(serialized_size + 1);
-    if (serialized_response == NULL)
-    {
-        CONTRACT_SAFE_LOG(1, "failed serialization; failed allocation");
+    if (! result.resize(serialized_size+1))
         return false;
-    }
 
-    JSON_Status jret = json_serialize_to_buffer(value_, serialized_response, serialized_size + 1);
+    JSON_Status jret = json_serialize_to_buffer(value_, (char *)result.value_, result.size_);
     if (jret != JSONSuccess)
     {
         CONTRACT_SAFE_LOG(1, "failed serialization; invalid value");
-        free(serialized_response);
         return false;
     }
 
-    return result.take((uint8_t*)serialized_response, serialized_size+1);
+    return true;
 }
 
 // -----------------------------------------------------------------
@@ -140,11 +135,14 @@ char* ww::value::Value::serialize(void) const
     // serialize the result
     size_t serialized_size = json_serialization_size(value_);
     char *serialized_response = (char *)malloc(serialized_size + 1);
+
     if (serialized_response == NULL)
     {
         CONTRACT_SAFE_LOG(1, "failed serialization; failed allocation");
         return NULL;
     }
+
+    memset(serialized_response, 0, serialized_size + 1);
 
     JSON_Status jret = json_serialize_to_buffer(value_, serialized_response, serialized_size + 1);
     if (jret != JSONSuccess)
@@ -326,7 +324,7 @@ bool ww::value::Object::set_value(const char* name, const ww::value::Value& valu
     if (json_object_set_value(json_object(value_), name, new_json_value) != JSONSuccess)
     {
         CONTRACT_SAFE_LOG(1, "object set value; failed to save property %s", name);
-        free(new_json_value);
+        json_value_free(new_json_value);
         return false;
     }
 
@@ -455,7 +453,7 @@ bool ww::value::Array::append_value(const ww::value::Value& value)
 
     if (json_array_append_value(json_array(value_), json_value) != JSONSuccess)
     {
-        free(json_value);
+        json_value_free(json_value);
         return false;
     }
 
