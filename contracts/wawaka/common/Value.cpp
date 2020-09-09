@@ -114,45 +114,26 @@ bool ww::value::Value::serialize(StringArray& result) const
         return false;
     }
 
-    // serialize the result
-    size_t serialized_size = json_serialization_size(value_);
-    if (! result.resize(serialized_size+1))
+    char *serialized_response = (char *)serialize();
+    if (serialized_response == NULL)
         return false;
 
-    JSON_Status jret = json_serialize_to_buffer(value_, (char *)result.value_, result.size_);
-    if (jret != JSONSuccess)
-    {
-        CONTRACT_SAFE_LOG(1, "failed serialization; invalid value");
-        return false;
-    }
+    bool success = result.assign(serialized_response);
+    free(serialized_response);
 
-    return true;
+    return success;
 }
 
 // -----------------------------------------------------------------
 char* ww::value::Value::serialize(void) const
 {
-    // serialize the result
-    size_t serialized_size = json_serialization_size(value_);
-    char *serialized_response = (char *)malloc(serialized_size + 1);
-
-    if (serialized_response == NULL)
+    if (value_ == NULL)
     {
-        CONTRACT_SAFE_LOG(1, "failed serialization; failed allocation");
+        CONTRACT_SAFE_LOG(1, "failed serialization; no value");
         return NULL;
     }
 
-    memset(serialized_response, 0, serialized_size + 1);
-
-    JSON_Status jret = json_serialize_to_buffer(value_, serialized_response, serialized_size + 1);
-    if (jret != JSONSuccess)
-    {
-        CONTRACT_SAFE_LOG(1, "failed serialization; invalid value");
-        free(serialized_response);
-        return NULL;
-    }
-
-    return serialized_response;
+    return json_serialize_to_string(value_);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

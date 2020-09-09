@@ -14,7 +14,7 @@
  */
 
 
-#include "WasmExtensions.h"
+#include "Cryptography.h"
 #include "IssuerAuthority.h"
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -93,9 +93,7 @@ bool ww::exchange::IssuerAuthority::sign(
 
     // sign the serialized authority
     StringArray signature;
-    if (! ecdsa_sign_message(serialized.value_, serialized.size_,
-                             (const char*)authorizing_signing_key.value_, authorizing_signing_key.size_,
-                             &signature.value_, &signature.size_))
+    if (! ww::crypto::ecdsa::sign_message(serialized, authorizing_signing_key, signature))
     {
         CONTRACT_SAFE_LOG(3, "failed to sign serialized issuer authority");
         return false;
@@ -103,7 +101,7 @@ bool ww::exchange::IssuerAuthority::sign(
 
     // base64 encode the signature so we can use it in the JSON
     StringArray encoded;
-    if (! b64_encode(signature.value_, signature.size_, (char**)&encoded.value_, &encoded.size_))
+    if (! ww::crypto::b64_encode(signature, encoded))
     {
         CONTRACT_SAFE_LOG(3, "failed to encode issuer authority signature");
         return false;
@@ -129,18 +127,16 @@ bool ww::exchange::IssuerAuthority::verify_signature(
     }
 
     // sign the signature from the object
-    StringArray encoded(get_string("authorizing_signature"));
+    const StringArray encoded(get_string("authorizing_signature"));
     StringArray signature;
 
-    if (! b64_decode((const char*)encoded.value_, encoded.size_, (uint8_t**)&signature.value_, &signature.size_))
+    if (! ww::crypto::b64_decode(encoded, signature))
     {
         CONTRACT_SAFE_LOG(3, "failed to decode issuer authority signature");
         return false;
     }
 
-    if (! ecdsa_verify_signature(serialized.value_, serialized.size_,
-                                 (const char*)authorizing_verifying_key.value_, authorizing_verifying_key.size_,
-                                 signature.value_, signature.size_))
+    if (! ww::crypto::ecdsa::verify_signature(serialized, authorizing_verifying_key, signature))
     {
         CONTRACT_SAFE_LOG(2, "failed to verify issuer authority");
         return false;

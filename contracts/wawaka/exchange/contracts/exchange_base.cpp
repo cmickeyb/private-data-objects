@@ -18,14 +18,14 @@
 
 #include "Dispatch.h"
 
-#include "KeyValue.h"
+#include "Cryptography.h"
 #include "Environment.h"
+#include "KeyValue.h"
 #include "Message.h"
 #include "Response.h"
 #include "StringArray.h"
 #include "Util.h"
 #include "Value.h"
-#include "WasmExtensions.h"
 
 #include "exchange_base.h"
 
@@ -75,8 +75,7 @@ bool ww::exchange::exchange_base::initialize_contract(
     StringArray public_key;
     StringArray private_key;
 
-    if (! ecdsa_create_signing_keys((char**)&private_key.value_, &private_key.size_,
-                                    (char**)&public_key.value_, &public_key.size_))
+    if (! ww::crypto::ecdsa::generate_keys(private_key, public_key))
         return rsp.error("failed to create contract ecdsa keys");
 
     if (! exchange_base_store.set(md_verifying_key, public_key))
@@ -113,7 +112,7 @@ bool ww::exchange::exchange_base::get_verifying_key(
     if (! ww::exchange::exchange_base::get_verifying_key(verifying_key))
         return rsp.error("corrupted state; verifying key not found");
 
-    ww::value::String v((char*)verifying_key.value_);
+    ww::value::String v((char*)verifying_key.c_data());
     return rsp.value(v, false);
 }
 

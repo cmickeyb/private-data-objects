@@ -75,6 +75,8 @@ bool ww::exchange::issuer_authority_base::initialize_root_authority(
     if (! ww::exchange::exchange_base::get_verifying_key(verifying_key))
         return rsp.error("corrupted state; verifying key not found");
 
+
+
     ww::value::String verifying_key_string((const char*)verifying_key.c_data());
 
     // Set the asset type
@@ -183,7 +185,7 @@ bool ww::exchange::issuer_authority_base::get_asset_type_identifier(
     if (! ww::exchange::issuer_authority_base::get_asset_type_identifier(asset_type_identifier))
         return rsp.error("contract state corrupted, no asset type identifier");
 
-    ww::value::String v((char*)asset_type_identifier.value_);
+    ww::value::String v((char*)asset_type_identifier.c_data());
     return rsp.value(v, false);
 }
 

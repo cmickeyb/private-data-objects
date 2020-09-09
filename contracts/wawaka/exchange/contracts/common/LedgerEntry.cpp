@@ -15,8 +15,8 @@
 
 #include "LedgerEntry.h"
 
+#include "Cryptography.h"
 #include "StringArray.h"
-#include "WasmExtensions.h"
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Class: ww::exchange::LedgerEntry
@@ -131,7 +131,7 @@ bool ww::exchange::LedgerEntry::initialize_escrow_identifier(void)
 
     // base64 encode the random identifier
     StringArray encoded;
-    if (! b64_encode(id_array.value_, id_array.size_, (char**)&encoded.value_, &encoded.size_))
+    if (! ww::crypto::b64_encode(id_array, encoded))
         return false;
 
     // and save it in the ledger entry

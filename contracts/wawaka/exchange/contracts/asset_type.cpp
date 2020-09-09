@@ -127,7 +127,7 @@ bool get_asset_type_identifier(const Message& msg, const Environment& env, Respo
     if (! asset_type_store.get(md_asset_type_id_key, asset_type_identifier))
         return rsp.error("contract state corrupted, no asset type identifier");
 
-    ww::value::String v((char*)asset_type_identifier.value_);
+    ww::value::String v((char*)asset_type_identifier.c_data());
     return rsp.value(v, false);
 }
 
@@ -150,7 +150,7 @@ bool get_description(const Message& msg, const Environment& env, Response& rsp)
     if (! asset_type_store.get(md_description_key, description))
         return rsp.error("contract state corrupted, no description");
 
-    ww::value::String v((char*)description.value_);
+    ww::value::String v((char*)description.c_data());
     return rsp.value(v, false);
 }
 
@@ -173,7 +173,7 @@ bool get_link(const Message& msg, const Environment& env, Response& rsp)
     if (! asset_type_store.get(md_link_key, link))
         return rsp.error("contract state corrupted, no link");
 
-    ww::value::String v((char*)link.value_);
+    ww::value::String v((char*)link.c_data());
     return rsp.value(v, false);
 }
 
@@ -196,7 +196,7 @@ bool get_name(const Message& msg, const Environment& env, Response& rsp)
     if (! asset_type_store.get(md_name_key, name))
         return rsp.error("contract state corrupted, no name");
 
-    ww::value::String v((char*)name.value_);
+    ww::value::String v((char*)name.c_data());
     return rsp.value(v, false);
 }
 

@@ -21,10 +21,10 @@
 class StringArray
 {
 protected:
-public:
     uint8_t *value_ = NULL;
     size_t size_ = 0;
 
+public:
     StringArray(void);
     StringArray(const size_t size);
     StringArray(const uint8_t* buffer, size_t size);

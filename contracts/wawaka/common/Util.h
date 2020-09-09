@@ -15,6 +15,11 @@
 
 #pragma once
 
+#define ASSERT_CONDITION(_cond, _rsp) \
+    do { \
+    if (! _cond)
+
+
 #define ASSERT_SENDER_IS_OWNER(_env, _rsp)                              \
     do {                                                                \
         if (strcmp(_env.creator_id_, _env.originator_id_) != 0)         \
