@@ -167,6 +167,10 @@ class ContractController(cmd.Cmd) :
         self.deferred_lines = []
         self.nesting = []
 
+        self.bindings.bind('__error__', "false")
+        self.bindings.bind('__error_message__', "")
+        self.__error__ = self.__default_error_handler__
+
         name = self.state.get(['Client', 'Identity'], "")
         self.prompt = "{0}> ".format(name)
 
@@ -193,13 +197,23 @@ class ContractController(cmd.Cmd) :
         return self.non_interactive
 
     # -----------------------------------------------------------------
-    def __error__(self, command, args, message) :
+    def __default_error_handler__(self, command, args, message) :
         """handle general errors caused by exceptions
         """
         print('"{0} {1}": {2}'.format(command, args, message))
 
         self.exit_code = 1
         return self.non_interactive
+
+    # -----------------------------------------------------------------
+    def __trapped_error_handler__(self, command, args, message) :
+        """handle general errors caused by exceptions
+        """
+
+        self.bindings.bind('__error__', "true")
+        self.bindings.bind('__error_message__', message)
+
+        return False
 
     # -----------------------------------------------------------------
     def precmd(self, line) :
@@ -215,6 +229,38 @@ class ContractController(cmd.Cmd) :
     # =================================================================
     # STOCK COMMANDS
     # =================================================================
+
+    # -----------------------------------------------------------------
+    def do_trap_error(self, args) :
+        """
+        trap_error -- catch errors and report in the symbol '__error__'
+        """
+        if self.deferred > 0 : return False
+
+        self.__error__ = self.__trapped_error_handler__
+        return False
+
+    # -----------------------------------------------------------------
+    def do_clear_error(self, args) :
+        """
+        clear_error -- clear any error status
+        """
+        if self.deferred > 0 : return False
+
+        self.bindings.bind('__error__', "false")
+        self.bindings.bind('__error_message__', "")
+
+        return False
+
+    # -----------------------------------------------------------------
+    def do_untrap_error(self, args) :
+        """
+        untrap_error -- stop catching errors
+        """
+        if self.deferred > 0 : return False
+
+        self.__error__ = self.__default_error_handler__
+        return False
 
     # -----------------------------------------------------------------
     def do_sleep(self, args) :
