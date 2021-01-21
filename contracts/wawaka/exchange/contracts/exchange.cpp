@@ -36,16 +36,16 @@
 
 static KeyValueStore exchange_state("exchange_state");
 
-static const StringArray md_asset_request("asset_request");
 static const StringArray md_current_state("current_state");
+static const StringArray md_asset_request("asset_request");
 static const StringArray md_offered_asset("offered_asset");
 static const StringArray md_exchanged_asset("exchanged_asset");
 static const StringArray md_exchanged_asset_owner("exchanged_asset_owner");
 
-#define EXCHANGE_STATE_START     0
-#define EXCHANGE_STATE_OFFERED   1
-#define EXCHANGE_STATE_COMPLETED 2
-#define EXCHANGE_STATE_CANCELLED 3
+#define EXCHANGE_STATE_START     0b0001
+#define EXCHANGE_STATE_OFFERED   0b0010
+#define EXCHANGE_STATE_COMPLETED 0b0100
+#define EXCHANGE_STATE_CANCELLED 0b1000
 
 #define SET_STATE(rsp, _STATE_)                                         \
 do {                                                                    \
@@ -59,8 +59,8 @@ do {                                                                    \
     uint32_t current_state;                                             \
     if (! exchange_state.get(md_current_state, current_state))          \
         return rsp.error("unexpected error, failed to retrieve current state"); \
-    if (current_state != _EXPECTED_STATE_)                              \
-        return rsp.error("operation failed, incorrect state"); \
+    if ((current_state & ( _EXPECTED_STATE_ )) == 0)                    \
+        return rsp.error("operation failed, incorrect state");          \
 } while (0)
 
 // -----------------------------------------------------------------
@@ -76,6 +76,17 @@ do {                                                                    \
 bool initialize_contract(const Environment& env, Response& rsp)
 {
     SET_STATE(rsp, EXCHANGE_STATE_START);
+
+    const StringArray empty_value("");
+    ASSERT_SUCCESS(rsp, exchange_state.set(md_asset_request, empty_value),
+                   "unexpected error, failed to initialize metadata");
+    ASSERT_SUCCESS(rsp, exchange_state.set(md_offered_asset, empty_value),
+                   "unexpected error, failed to initialize metadata");
+    ASSERT_SUCCESS(rsp, exchange_state.set(md_exchanged_asset, empty_value),
+                   "unexpected error, failed to initialize metadata");
+    ASSERT_SUCCESS(rsp, exchange_state.set(md_exchanged_asset_owner, empty_value),
+                   "unexpected error, failed to initialize metadata");
+
     return ww::exchange::exchange_base::initialize_contract(env, rsp);
 }
 
@@ -179,7 +190,7 @@ bool get_verifying_key(const Message& msg, const Environment& env, Response& rsp
 }
 
 // -----------------------------------------------------------------
-// METHOD: cancel
+// METHOD: cancel_exchange
 //
 // JSON PARAMETERS:
 //   none
@@ -190,7 +201,7 @@ bool get_verifying_key(const Message& msg, const Environment& env, Response& rsp
 // MODIFIES STATE:
 //   true
 // -----------------------------------------------------------------
-bool cancel(const Message& msg, const Environment& env, Response& rsp)
+bool cancel_exchange(const Message& msg, const Environment& env, Response& rsp)
 {
     ASSERT_INITIALIZED(rsp);
     ASSERT_SENDER_IS_OWNER(env, rsp);
@@ -202,7 +213,7 @@ bool cancel(const Message& msg, const Environment& env, Response& rsp)
 }
 
 // -----------------------------------------------------------------
-// METHOD: cancel_attestation
+// METHOD: cancel_exchange_attestation
 //
 // JSON PARAMETERS:
 //   none
@@ -213,7 +224,7 @@ bool cancel(const Message& msg, const Environment& env, Response& rsp)
 // MODIFIES STATE:
 //   false
 // -----------------------------------------------------------------
-bool cancel_attestation(const Message& msg, const Environment& env, Response& rsp)
+bool cancel_exchange_attestation(const Message& msg, const Environment& env, Response& rsp)
 {
     ASSERT_INITIALIZED(rsp);
     ASSERT_SENDER_IS_OWNER(env, rsp);
@@ -331,8 +342,11 @@ bool exchange_asset(const Message& msg, const Environment& env, Response& rsp)
     ASSERT_INITIALIZED(rsp);
     CHECK_STATE(rsp, EXCHANGE_STATE_OFFERED);
 
-    if (! msg.validate_schema(EXCHANGE_ASSET_SCHEMA))
-        return rsp.error("invalid request, missing required parameters");
+    ASSERT_SUCCESS(rsp, strcmp(env.creator_id_, env.originator_id_) != 0,
+                   "invalid request, contract owner may not offer exchange asset");
+
+    ASSERT_SUCCESS(rsp, msg.validate_schema(EXCHANGE_ASSET_SCHEMA),
+                   "invalid request, missing required parameters");
 
     // validate the exchange asset
     ww::exchange::AuthoritativeAsset exchanged_authoritative_asset;
@@ -421,6 +435,7 @@ bool claim_exchanged_asset(const Message& msg, const Environment& env, Response&
     StringArray exchanged_asset_owner;
     ASSERT_SUCCESS(rsp, exchange_state.get(md_exchanged_asset_owner, exchanged_asset_owner),
                    "unexpected error, failed to get exchanged asset owner");
+
     const ww::value::String exchanged_asset_owner_string((const char*)exchanged_asset_owner.c_data());
     ASSERT_SUCCESS(rsp, claim_request.set_old_owner_identity(exchanged_asset_owner_string),
                    "unexpected error, failed to set exchanged asset owner");
@@ -473,6 +488,12 @@ bool claim_offered_asset(const Message& msg, const Environment& env, Response& r
 
     ww::exchange::EscrowClaim claim_request;
 
+    StringArray exchanged_asset_owner;
+    ASSERT_SUCCESS(rsp, exchange_state.get(md_exchanged_asset_owner, exchanged_asset_owner),
+                   "unexpected error, failed to get exchanged asset owner");
+    ASSERT_SUCCESS(rsp, strcmp((const char*)exchanged_asset_owner.c_data(), env.originator_id_) == 0,
+                   "invalid request, incorrect identity");
+
     // set the old owner identity
     ASSERT_SUCCESS(rsp, claim_request.set_old_owner_identity(env.creator_id_),
                    "unexpected error, failed to set the old owner identity");
@@ -507,17 +528,97 @@ bool claim_offered_asset(const Message& msg, const Environment& env, Response& r
 }
 
 // -----------------------------------------------------------------
+// METHOD: release_asset
+//
+// JSON PARAMETERS:
+//   None
+//
+// RETURNS:
+//   #/pdo/wawaka/exchange/basetypes/escrow_claim_type
+//
+// MODIFIES STATE:
+//   false
+// -----------------------------------------------------------------
+#define RELEASE_ASSET_SCHEMA "{ \"escrowed_authoritative_asset\": " AUTHORITATIVE_ASSET_SCHEMA " }"
+
+bool release_asset(const Message& msg, const Environment& env, Response& rsp)
+{
+    ASSERT_INITIALIZED(rsp);
+    CHECK_STATE(rsp, EXCHANGE_STATE_COMPLETED | EXCHANGE_STATE_CANCELLED);
+
+    ASSERT_SUCCESS(rsp, strcmp(env.creator_id_, env.originator_id_) != 0,
+                   "invalid request, offered asset owner may not release asset");
+
+    StringArray exchanged_asset_owner;
+    ASSERT_SUCCESS(rsp, exchange_state.get(md_exchanged_asset_owner, exchanged_asset_owner),
+                   "unexpected error, failed to get exchanged asset owner");
+    ASSERT_SUCCESS(rsp, strcmp((const char*)exchanged_asset_owner.c_data(), env.originator_id_) != 0,
+                   "invalid request, exchange asset owner may not release asset");
+
+    // validate the escrowed asset parameter
+    ASSERT_SUCCESS(rsp, msg.validate_schema(RELEASE_ASSET_SCHEMA),
+                   "invalid request, missing required parameters");
+
+    ww::exchange::AuthoritativeAsset escrowed_authoritative_asset;
+    ASSERT_SUCCESS(rsp, msg.get_value("escrowed_authoritative_asset", escrowed_authoritative_asset),
+                   "invalid request, malformed parameter, escrowed_authoritative_asset");
+    ASSERT_SUCCESS(rsp, escrowed_authoritative_asset.validate(),
+                   "invalid request, malformed parameter, escrowed_authoritative_asset");
+
+    // verify that the asset was escrowed to this contract object
+    StringArray verifying_key;
+    ASSERT_SUCCESS(rsp, ww::exchange::exchange_base::get_verifying_key(verifying_key),
+                   "unexpected error, failed to retrieve verifying key");
+
+    ww::exchange::Asset asset;
+    SAFE_GET(rsp, asset, escrowed_authoritative_asset, asset);
+
+    ww::value::String escrow_agent_identity;
+    SAFE_GET(rsp, escrow_agent_identity, asset, escrow_agent_identity);
+
+    ASSERT_SUCCESS(rsp,
+                   strncmp(escrow_agent_identity.get(), (const char*)verifying_key.c_data(), verifying_key.size()) == 0,
+                   "invalid request, malformed parameter, invalid escrow");
+
+    // verify the that the message originator is the owner of the asset being offered
+    ww::value::String owner_identity;
+    SAFE_GET(rsp, owner_identity, asset, owner_identity);
+    ASSERT_SUCCESS(rsp, strcmp(owner_identity.get(), env.originator_id_) == 0,
+                   "invalid request, only the owner of the asset may offer it in exchange");
+
+    // create the escrow release response
+    ww::exchange::EscrowRelease release_request;
+
+    // add the current state reference to the attestation
+    const ww::exchange::StateReference state_reference(env);
+    ASSERT_SUCCESS(rsp, release_request.set_escrow_agent_state_reference(state_reference),
+                   "unexpected error, failed to extract state reference");
+
+    // get the signing key
+    StringArray signing_key;
+    ASSERT_SUCCESS(rsp, ww::exchange::exchange_base::get_signing_key(signing_key),
+                   "unexpected error, failed to retrieve signing key");
+
+    // and finally sign the asset and save the signature in the attestation
+    ASSERT_SUCCESS(rsp, release_request.sign(asset, signing_key),
+                   "unexpected error, failed to sign release attestation");
+
+    return rsp.value(release_request, false);
+}
+
+// -----------------------------------------------------------------
 // -----------------------------------------------------------------
 contract_method_reference_t contract_method_dispatch_table[] = {
     CONTRACT_METHOD(initialize),
     CONTRACT_METHOD(get_verifying_key),
-    CONTRACT_METHOD(cancel),
-    CONTRACT_METHOD(cancel_attestation),
+    CONTRACT_METHOD(cancel_exchange),
+    CONTRACT_METHOD(cancel_exchange_attestation),
     CONTRACT_METHOD(examine_offered_asset),
     CONTRACT_METHOD(examine_requested_asset),
 
     CONTRACT_METHOD(exchange_asset),
     CONTRACT_METHOD(claim_exchanged_asset),
     CONTRACT_METHOD(claim_offered_asset),
+    CONTRACT_METHOD(release_asset),
     { NULL, NULL }
 };

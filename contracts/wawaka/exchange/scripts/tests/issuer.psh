@@ -1,0 +1,112 @@
+#! /usr/bin/env pdo-shell
+
+## Copyright 2018 Intel Corporation
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+
+## One shell variable is used:
+##    color -- the color of the marbles for testing
+##
+## $ pdo-shell -s create.psh -m color <color>
+
+if --null ${save}
+   echo must specify contract directory: '-m save <path>'
+   exit -1
+fi
+
+if --null ${color}
+   echo must specify color: '-m color <color>'
+   exit -1
+fi
+
+## -----------------------------------------------------------------
+echo ${_HEADER_} basic issuer tests ${_ENDC_}
+## -----------------------------------------------------------------
+
+identity -n ${issuer_identity}
+asset_type -q -f ${type_contract} get_asset_type_identifier -s _type_id_
+issuer -q -f ${issuer_contract} get_asset_type_identifier -s _issuer_type_id_
+if --not -e ${_type_id_} ${_issuer_type_id_}
+   echo ${_ERROR_} type identifier mismatch ${_ENDC_}
+   exit -v -1
+fi
+
+vetting -q -f ${vetting_contract}
+issuer -q -f ${issuer_contract} get_authority -s _tmp_
+if --not -e ${_authority_} ${_tmp_}
+   echo ${_ERROR_} authority does not match ${_ENDC_}
+   exit -v -1
+fi
+
+issuer -q -w -f ${issuer_contract} issue -o ${_user1_key} -c 51
+issuer -q -w -f ${issuer_contract} issue -o ${_user2_key} -c 52
+issuer -q -w -f ${issuer_contract} issue -o ${_user3_key} -c 53
+issuer -q -w -f ${issuer_contract} issue -o ${_user4_key} -c 54
+issuer -q -w -f ${issuer_contract} issue -o ${_user5_key} -c 55
+
+identity -n user1
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 51
+   echo ${_ERROR_} balance does not match, ${_balance} ${_ENDC_}
+   exit -v -1
+fi
+echo user1 balance matched
+
+identity -n user2
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 52
+   echo ${_ERROR_} balance does not match, ${_balance} ${_ENDC_}
+   exit -v -1
+fi
+echo user2 balance matched
+
+identity -n user3
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 53
+   echo ${_ERROR_} balance does not match, ${_balance} ${_ENDC_}
+   exit -v -1
+fi
+echo user3 balance matched
+
+identity -n user4
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 54
+   echo ${_ERROR_} balance does not match, ${_balance} ${_ENDC_}
+   exit -v -1
+fi
+echo user4 balance matched
+
+identity -n user5
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 55
+   echo ${_ERROR_} balance does not match, ${_balance} ${_ENDC_}
+   exit -v -1
+fi
+echo user5 balance matched
+
+identity -n user1
+issuer -q -w -f ${issuer_contract} transfer -n ${_user2_key} -c 50
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 1
+   echo ${_ERROR_} transfer source balance does not match, ${_balance} not 1 ${_ENDC_}
+   exit -v -1
+fi
+
+identity -n user2
+issuer -q -f ${issuer_contract} get_balance -s _balance
+if --not -e ${_balance} 102
+   echo ${_ERROR_} transfer destination balance does not match, ${_balance} not 102 ${_ENDC_}
+   exit -v -1
+fi
+
+echo transfer balance matched

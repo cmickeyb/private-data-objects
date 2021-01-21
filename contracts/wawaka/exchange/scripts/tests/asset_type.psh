@@ -14,22 +14,25 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-set -q --conditional -s data -v .
-set -q --conditional -s save -v .
-script -f ${path}/init.psh
+## One shell variable is used:
+##    color -- the color of the marbles for testing
+##
+## $ pdo-shell -s create.psh -m color <color>
+
+if --null ${save}
+   echo must specify contract directory: '-m save <path>'
+   exit -1
+fi
 
 if --null ${color}
    echo must specify color: '-m color <color>'
-   exit
+   exit -1
 fi
 
-set -q --conditional -s issuer_identity -v ${color}_issuer
-set -q --conditional -s contract -v ${save}/${color}_issuer.pdo
+## -----------------------------------------------------------------
+echo ${_HEADER_} basic asset type tests ${_ENDC_}
+## -----------------------------------------------------------------
+asset_type -q -f ${save}/${color}_type.pdo describe
+asset_type -q -f ${save}/${color}_type.pdo get_asset_type_identifier -s _type_id_
 
-## =================================================================
-echo create ${color} marble issuer
-## =================================================================
-identity -n ${issuer_identity}
-create -c issuer_contract -s _issuer -f ${contract}
-
-exit
+echo ${color} marble type identifier is ${_type_id_}

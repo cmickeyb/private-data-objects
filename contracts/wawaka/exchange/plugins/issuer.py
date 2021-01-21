@@ -250,6 +250,8 @@ def do_issuer(self, args) :
     issuer -- invoke methods from the issuer contract
     """
 
+    if self.deferred > 0 : return False
+
     try :
         pargs = self.__arg_parse__(args)
         __command_issuer__(self.state, self.bindings, pargs)

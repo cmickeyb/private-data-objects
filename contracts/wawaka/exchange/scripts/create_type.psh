@@ -23,11 +23,14 @@ if --null ${color}
    exit
 fi
 
+set -q --conditional -s type_identity -v ${color}_type
+set -q --conditional -s contract -v ${save}/${color}_issuer.pdo
+
 ## =================================================================
 echo create the asset type for ${color} marbles
 ## =================================================================
-identity -n ${color}_type
-create -c asset_type -s _asset_type -f ${save}/${color}_type.pdo
-asset_type -q -w -f ${save}/${color}_type.pdo initialize -n "${color} marbles" -d "${color} marble description" -l "http://"
+identity -n ${type_identity}
+create -c asset_type -s _asset_type -f ${contract}
+asset_type -q -w -f ${contract} initialize -n "${color} marbles" -d "${color} marble description" -l "http://"
 
 exit

@@ -68,8 +68,7 @@ def __command_exchange__(state, bindings, pargs) :
         type=invocation_parameter,
         required=True)
 
-    subparser = subparsers.add_parser('cancel')
-    subparser = subparsers.add_parser('cancel_attestation')
+    subparser = subparsers.add_parser('cancel_exchange')
     subparser.add_argument(
         '-s', '--symbol',
         help='binding symbol for result',
@@ -135,15 +134,12 @@ def __command_exchange__(state, bindings, pargs) :
         return
 
     # -------------------------------------------------------
-    if options.command == 'cancel' :
-        message = invocation_request('cancel')
-        send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
-        return
+    if options.command == 'cancel_exchange' :
+        message = invocation_request('cancel_exchange')
+        result = send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
 
-    # -------------------------------------------------------
-    if options.command == 'cancel_attestation' :
         extraparams['commit'] = False
-        message = invocation_request('cancel_attestation')
+        message = invocation_request('cancel_exchange_attestation')
         result = send_to_contract(state, options.save_file, message, eservice_url=options.enclave, **extraparams)
         if result and options.symbol :
             bindings.bind(options.symbol, result)
@@ -199,6 +195,8 @@ def do_exchange(self, args) :
     """
     exchange -- invoke methods from the exchange contract
     """
+
+    if self.deferred > 0 : return False
 
     try :
         pargs = self.__arg_parse__(args)

@@ -1,0 +1,42 @@
+#! /usr/bin/env pdo-shell
+
+## Copyright 2018 Intel Corporation
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+
+## One shell variable is used:
+##    color -- the color of the marbles for testing
+##
+## $ pdo-shell -s create.psh -m color <color>
+
+if --null ${save}
+   echo must specify contract directory: '-m save <path>'
+   exit -1
+fi
+
+if --null ${color}
+   echo must specify color: '-m color <color>'
+   exit -1
+fi
+
+## -----------------------------------------------------------------
+echo ${_HEADER_} basic vetting organization tests ${_ENDC_}
+## -----------------------------------------------------------------
+vetting -q -f ${save}/${color}_vetting.pdo get_verifying_key -s _vetting_id_
+
+asset_type -q -f ${save}/${color}_type.pdo get_asset_type_identifier -s _type_id_
+vetting -q -f ${save}/${color}_vetting.pdo get_asset_type_identifier -s _tmp_
+if --not -e ${_type_id_} ${_tmp_}
+   echo ${_ERROR_} type identifier mismatch ${_ENDC_}
+   exit -v -1
+fi

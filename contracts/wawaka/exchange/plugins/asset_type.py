@@ -87,6 +87,8 @@ def do_asset_type(self, args) :
     asset_type -- invoke methods from the asset_type contract
     """
 
+    if self.deferred > 0 : return False
+
     try :
         pargs = self.__arg_parse__(args)
         __command_asset_type__(self.state, self.bindings, pargs)

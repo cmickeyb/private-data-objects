@@ -123,6 +123,8 @@ def do_vetting(self, args) :
     vetting -- invoke methods from the vetting contract
     """
 
+    if self.deferred > 0 : return False
+
     try :
         pargs = self.__arg_parse__(args)
         __command_vetting__(self.state, self.bindings, pargs)
