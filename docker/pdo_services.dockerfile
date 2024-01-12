@@ -14,7 +14,8 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
-FROM pdo_services_base
+ARG PDO_VERSION
+FROM pdo_services_base:${PDO_VERSION}
 
 # -----------------------------------------------------------------
 # set up the PDO sources
@@ -32,6 +33,9 @@ ENV PDO_INTERPRETER=${PDO_INTERPRETER}
 
 ARG WASM_MEM_CONFIG=MEDIUM
 ENV WASM_MEM_CONFIG=${WASM_MEM_CONFIG}
+
+ARG PDO_LOG_LEVEL=info
+ENV PDO_LOG_LEVEL=${PDO_LOG_LEVEL}
 
 # copy the source files into the image
 WORKDIR /project/pdo

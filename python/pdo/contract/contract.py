@@ -22,8 +22,7 @@ from pdo.contract.request import UpdateStateRequest, InitializeStateRequest
 from pdo.contract.state import ContractState
 from pdo.contract.code import ContractCode, CompactContractCode
 import pdo.common.config as pconfig
-
-import pdo.service_client.service_data.eservice as eservice_db
+from pdo.service_client.service_data.service_data import ServiceDatabaseManager as service_data
 
 import logging
 logger = logging.getLogger(__name__)
@@ -38,7 +37,6 @@ class Contract(object) :
     @classmethod
     def read_from_file(cls, ledger_config, basename, data_dir = None) :
         filename = putils.build_file_name(basename, data_dir, cls.__path__, cls.__extension__)
-        logger.debug('load contract information from %s', filename)
         if os.path.exists(filename) is not True :
             raise FileNotFoundError(errno.ENOENT, "contract data file does not exist", filename)
 
@@ -125,10 +123,10 @@ class Contract(object) :
     def set_replication_parameters(self, num_provable_replicas=None, availability_duration=None, replication_set=None, **kwargs):
         def eservice_to_sservice(eservice_id) :
             logger.warning('look up {}'.format(eservice_id))
-            einfo = eservice_db.get_by_enclave_id(eservice_id)
+            einfo = service_data.local_service_manager.get_by_identity(eservice_id, 'eservice')
             if einfo is None :
                 raise Exception('unknown eservice {}'.format(eservice_id))
-            return einfo.client.storage_service_url
+            return einfo.storage_service_url
 
         # pull the defaults from the configuration if they are not
         # otherwise set by the caller

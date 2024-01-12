@@ -37,7 +37,7 @@ log_dir = os.path.join(install_root_dir, "logs")
 key_dir = os.path.join(install_root_dir, "keys")
 
 data_files = [
-    (bin_dir, [ 'bin/pdo-create.psh', 'bin/pdo-invoke.psh' ]),
+    (bin_dir, [ 'bin/pdo-create.psh', 'bin/pdo-invoke.psh', 'bin/pdo-create-service-groups.psh' ]),
     (etc_dir, [ 'etc/sample_client.toml' ])
 ]
 
@@ -62,7 +62,15 @@ setup(name='pdo_client',
       entry_points = {
           'console_scripts': [
               'pdo-shell = pdo.client.scripts.ShellCLI:Main',
-              'pdo-eservicedb = pdo.client.scripts.EServiceDatabaseCLI:Main'
+              'pdo-contract = pdo.client.scripts.EntryPoints:run_shell_contract',
+              'pdo-context = pdo.client.scripts.EntryPoints:run_shell_context',
+              'pdo-ledger = pdo.client.scripts.EntryPoints:run_shell_ledger',
+              'pdo-eservice = pdo.client.scripts.EntryPoints:run_shell_eservice',
+              'pdo-pservice = pdo.client.scripts.EntryPoints:run_shell_pservice',
+              'pdo-sservice = pdo.client.scripts.EntryPoints:run_shell_sservice',
+              'pdo-service-db = pdo.client.scripts.EntryPoints:run_shell_service_db',
+              'pdo-service-groups = pdo.client.scripts.EntryPoints:run_shell_service_groups',
+              'pdo-install-plugin-resources = pdo.client.builder.installer:install_plugin_resources',
           ]
       }
 )

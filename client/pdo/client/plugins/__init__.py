@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Copyright 2018 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-F_SERVICEHOME="$( cd -P "$( dirname ${BASH_SOURCE[0]} )/.." && pwd )"
-source ${F_SERVICEHOME}/bin/lib/common.sh
-source ${F_SERVICEHOME}/bin/lib/common_service.sh
-
-
-F_BASENAME='sservice'
-F_SERVICE_CMD='sservice'
-F_SERVICE_NAME='storage'
-
-service_status "$@"
+__all__ = []

@@ -55,46 +55,31 @@ done
 # -----------------------------------------------------------------
 # Set up the ledger url and proxy configuration
 # -----------------------------------------------------------------
+source /project/pdo/tools/environment.sh
+source ${PDO_HOME}/bin/lib/common.sh
+
 export PDO_HOSTNAME=${PDO_HOSTNAME:-${HOSTNAME}}
 if [ ! -z "${F_INTERFACE}" ] ; then
     export PDO_HOSTNAME=$F_INTERFACE
 fi
 
-export PDO_LEDGER_ADDRESS=$(dig +short ${PDO_HOSTNAME})
+export PDO_LEDGER_ADDRESS=$(force_to_ip ${PDO_HOSTNAME})
 export PDO_LEDGER_URL="http://${PDO_LEDGER_ADDRESS}:6600"
 
 export no_proxy=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$no_proxy
 export NO_PROXY=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$NO_PROXY
 
-source /project/pdo/tools/environment.sh
-source ${PDO_HOME}/ccf/bin/lib/pdo_common.sh
-
-# -----------------------------------------------------------------
-# Handle the configuration of the services
-#
-# Note the environment should have been created during the build
-# process for the ccf image
-# -----------------------------------------------------------------
-if [ "${F_MODE,,}" == "build" ]; then
-    yell configure services for host $PDO_HOSTNAME and ledger $PDO_LEDGER_URL
-    try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf keys
-    try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf config
-elif [ "${F_MODE,,}" == "copy" ]; then
-    yell copy the configuration from xfer/ccf/etc and xfer/ccf/keys
-    try cp ${XFER_DIR}/ccf/etc/* ${PDO_HOME}/ccf/etc/
-    try cp ${XFER_DIR}/ccf/keys/* ${PDO_LEDGER_KEY_ROOT}/
-elif [ "${F_MODE,,}" == "skip" ]; then
-    yell restart with existing configuration
-else
-    die "invalid restart mode; ${F_MODE}"
-fi
+# this is ridiculous. we need to canonicalize the ledger and
+# sgx keys into the keys directory hierarchy NOT the etc
+# hierarchy. future PR.
+mkdir -p ${PDO_LEDGER_KEY_ROOT}
 
 # -----------------------------------------------------------------
 say start the ccf network
 # -----------------------------------------------------------------
 . ${PDO_HOME}/ccf/bin/activate
 if [ ${F_NETWORK_MODE} == "start" ] ; then
-    try ${PDO_HOME}/ccf/bin/start_ccf_network.sh
+    try ${PDO_HOME}/ccf/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}
 elif [ ${F_NETWORK_MODE} == "join" ] ; then
     die "joining a network is not yet supported"
 else

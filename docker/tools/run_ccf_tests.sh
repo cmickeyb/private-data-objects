@@ -14,27 +14,27 @@
 # limitations under the License.
 
 # Tests are run EXCLUSIVELY with all services running on localhost
-export PDO_HOSTNAME=localhost
-export PDO_LEDGER_URL=http://localhost:6600
-
 source /project/pdo/tools/environment.sh
-source ${PDO_HOME}/ccf/bin/lib/pdo_common.sh
+source ${PDO_HOME}/bin/lib/common.sh
 
-export no_proxy=$PDO_HOSTNAME,$no_proxy
-export NO_PROXY=$POD_HOSTNAME,$NO_PROXY
+export PDO_HOSTNAME=localhost
+export PDO_LEDGER_ADDRESS=$(force_to_ip ${PDO_HOSTNAME})
+export PDO_LEDGER_URL="http://${PDO_LEDGER_ADDRESS}:6600"
 
-# -----------------------------------------------------------------
-yell configure services for host $PDO_HOSTNAME and ledger $PDO_LEDGER_URL
-# -----------------------------------------------------------------
-rm -f ${PDO_HOME}/ccf/etc/cchost.toml ${PDO_HOME}/ccf/etc/constitution.js
-try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf keys
-try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf config
+export no_proxy=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$no_proxy
+export NO_PROXY=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$NO_PROXY
+
+# this is ridiculous. we need to canonicalize the ledger and
+# sgx keys into the keys directory hierarchy NOT the etc
+# hierarchy. future PR.
+mkdir -p ${PDO_LEDGER_KEY_ROOT}
 
 # -----------------------------------------------------------------
 yell start the ccf service
 # -----------------------------------------------------------------
 . ${PDO_HOME}/ccf/bin/activate
-try ${PDO_HOME}/ccf/bin/start_ccf_network.sh
+yell ${PDO_HOME}/ccf/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}
+try ${PDO_HOME}/ccf/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}
 
 # -----------------------------------------------------------------
 yell copy the ledger keys

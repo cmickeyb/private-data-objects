@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Copyright 2018 Intel Corporation
+# Copyright 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-F_SERVICEHOME="$( cd -P "$( dirname ${BASH_SOURCE[0]} )/.." && pwd )"
-source ${F_SERVICEHOME}/bin/lib/common.sh
-source ${F_SERVICEHOME}/bin/lib/common_service.sh
+__all__ = [
+    'bindings',
+    'builder',
+    'context',
+    'installer',
+    'script',
+    'session',
+    'shell',
+    'state'
+]
 
-check_python_version
+from . bindings import Bindings
+from . session import SessionParameters
+from . state import State
+from . context import Context
 
-F_BASENAME='sservice'
-F_SERVICE_CMD='sservice'
-F_SERVICE_NAME='storage'
-
-service_start  "$@"
+from . builder import builder_command_base, invocation_parameter, process_structured_invocation_result

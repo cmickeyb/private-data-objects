@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Copyright 2018 Intel Corporation
+# Copyright 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-F_SERVICEHOME="$( cd -P "$( dirname ${BASH_SOURCE[0]} )/.." && pwd )"
-source ${F_SERVICEHOME}/bin/lib/common.sh
-source ${F_SERVICEHOME}/bin/lib/common_service.sh
+__all__ = [
+    'context',
+    'contract',
+    'eservice',
+    'ledger',
+    'pservice',
+    'service_db',
+    'service_groups',
+    'sservice',
+]
 
-F_BASENAME='sservice'
-F_SERVICE_NAME='storage'
+def load_common_commands(cmdclass) :
+    """Load all of the command modules
+    """
+    import importlib
+    def load_command(module_name) :
+        command_module = importlib.import_module('pdo.client.commands.' + module_name)
+        command_module.load_commands(cmdclass)
 
-service_stop "$@"
+    for m in __all__ :
+        load_command(m)

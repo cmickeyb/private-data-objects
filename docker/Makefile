@@ -45,7 +45,7 @@ DOCKER_BUILDARGS += --build-arg PDO_HOSTNAME=$(PDO_HOSTNAME)
 DOCKER_BUILDARGS += --build-arg PDO_LEDGER_URL=$(PDO_LEDGER_URL)
 DOCKER_BUILDARGS += --build-arg UID=$(PDO_USER_UID)
 DOCKER_BUILDARGS += --build-arg GID=$(PDO_GROUP_UID)
-DOCKER_ARGS = --progress=plain $(DOCKER_BUILDARGS)
+DOCKER_ARGS = $(DOCKER_BUILDARGS)
 
 IMAGES=base client services_base services ccf_base ccf
 
@@ -56,11 +56,16 @@ TIMESTAMP := $(shell /bin/date "+%Y%m%d%H%M%S")
 all : $(addprefix build_,$(IMAGES))
 
 rebuild_% : repository
-	@ docker build $(DOCKER_ARGS) --build-arg REBUILD=$(TIMESTAMP) --tag pdo_$* \
+	@ docker build $(DOCKER_ARGS) \
+		--build-arg REBUILD=$(TIMESTAMP) \
+		--build-arg PDO_VERSION=$(shell cd repository; bin/get_version) \
+		--tag pdo_$*:$(shell cd repository; bin/get_version) \
 		--file $(SCRIPT_DIR)/pdo_$*.dockerfile .
 
 build_% : repository
-	@ docker build $(DOCKER_ARGS) --tag pdo_$* \
+	@ docker build $(DOCKER_ARGS) \
+		--build-arg PDO_VERSION=$(shell cd repository; bin/get_version) \
+		--tag pdo_$*:$(shell cd repository; bin/get_version) \
 		--file $(SCRIPT_DIR)/pdo_$*.dockerfile .
 
 clean_% :
@@ -106,7 +111,8 @@ TEST_FILES += -f test.yaml
 
 build_test : repository
 	PDO_USER_UID=$(PDO_USER_UID) PDO_GROUP_UID=$(PDO_GROUP_UID) \
-		docker-compose $(TEST_FILES) build
+		docker-compose $(TEST_FILES) build \
+			--build-arg PDO_VERSION=$(shell cd repository; bin/get_version)
 
 test : clean_config clean_repository build_base build_services_base build_ccf_base build_test
 	docker-compose $(TEST_FILES) up --abort-on-container-exit
