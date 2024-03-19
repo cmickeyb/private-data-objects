@@ -115,6 +115,13 @@ _COMMON_=("--logfile __screen__" "--loglevel ${F_LOGLEVEL}")
 _COMMON_+=("--ledger ${F_LEDGER_URL}" "-m service_host ${F_SERVICE_HOST}")
 PSHELL_OPTS=${_COMMON_[@]}
 
+## -----------------------------------------------------------------
+## -----------------------------------------------------------------
+say initialize the service database and the service groups database
+try ${PDO_HOME}/bin/pdo-create-service-groups.psh ${PSHELL_OPTS}
+
+## -----------------------------------------------------------------
+## -----------------------------------------------------------------
 # enclave service group e3 uses ports 7103, 7104, and 7105
 # this code makes the assumption that the eservice database contains
 # entries for $F_SERVICE_HOST.

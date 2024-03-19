@@ -125,15 +125,6 @@ def initialize_environment(options) :
     if options.service_db:
         state.set(['Service', 'ServiceDatabaseFile'], options.service_db)
 
-    # importing a service group file will override earlier values, so we
-    # just add to the list of groups that have already been specified rather
-    # than simply replace it; note that these files will have bindings
-    # expanded and will be applied as glob expansions
-    if options.service_groups :
-        groupfiles = state.get(['Service', 'ServiceGroupFiles'], [])
-        groupfiles += options.service_groups
-        state.set(['Service', 'ServiceGroupFiles'], groupfiles)
-
     # set up the data paths
     if options.data_dir :
         state.set(['Contract', 'DataDirectory'], options.data_dir)
@@ -145,16 +136,13 @@ def initialize_environment(options) :
 
     # load the service groups from the groups.toml file, nothing breaks if the
     # file doesn't load, but we do want to give an error message
-    try :
-        groupfiles = state.get(['Service', 'ServiceGroupFiles'], [])
+    if options.service_groups :
+        groupfiles = options.service_groups
         groupfiles = list(map(lambda f : bindings.expand(f), groupfiles))
         groupfiles = map(lambda f : os.path.realpath(f), functools.reduce(lambda x, f : x + glob.glob(f), groupfiles, []))
         groupfiles = list(groupfiles)
-        if not pgroups.script_command_load.invoke(state, bindings, groupfiles) :
+        if not pgroups.script_command_import.invoke(state, bindings, groupfiles, merge=True) :
             return None
-    except Exception as e :
-        # log a warning but continue to run
-        logger.warning('Failed to load service group files; {}'.format(e))
 
     return (state, bindings)
 

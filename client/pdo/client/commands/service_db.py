@@ -19,6 +19,7 @@ import pdo.client.builder.shell as pshell
 import pdo.client.builder.script as pscript
 import pdo.common.config as pconfig
 import pdo.common.utility as putils
+
 from pdo.service_client.service_data.service_data import ServiceDatabaseManager as service_data
 
 import logging
@@ -95,6 +96,32 @@ def remove_service(state, service_type, service_url=None, service_name=None, ser
 def clear_service_data(state) :
     service_data.local_service_manager.reset()
     return True
+
+## -----------------------------------------------------------------
+def expand_service_name(service_type, name) :
+    """A utility function for expanding a service name into a URL
+    """
+    if service_type not in service_data.service_types :
+        raise RuntimeError("unknown service type; {}".format(service_type))
+
+    service_info = get_service_info(None, service_type, service_name=name)
+    if service_info is None :
+        raise RuntimeError('unknown service name {0}'.format(name))
+
+    return service_info.service_url
+
+## -----------------------------------------------------------------
+def expand_service_names(service_type, names = []) :
+    """A utility function for expanding a list of service names into URLs
+    """
+    if service_type not in service_data.service_types :
+        raise RuntimeError("unknown service type; {}".format(service_type))
+
+    result = set()                        # this ensures uniqueness
+    for name in names :
+        result.add(expand_service_name(service_type, name))
+
+    return list(result)
 
 ## -----------------------------------------------------------------
 ## COMMANDS

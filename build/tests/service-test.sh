@@ -122,6 +122,26 @@ say start storage service test
 try pdo-test-storage ${LOCAL_OPTS} --url http://${F_SERVICE_HOST}:7201
 
 # -----------------------------------------------------------------
+say run unit tests for service groups database
+# -----------------------------------------------------------------
+try ${PDO_SOURCE_ROOT}/build/tests/service-groups-test.psh \
+    ${PSHELL_OPTS} \
+    --bind tmpfile ${ESDB_FILE}
+
+say create the service and groups database using the groups CLI
+try pdo-service-db clear ${PSHELL_OPTS}
+try pdo-service-db add --url http://${F_SERVICE_HOST}:7101 --name es7101 --type eservice ${PSHELL_OPTS}
+try pdo-service-db add --url http://${F_SERVICE_HOST}:7102 --name es7102 --type eservice ${PSHELL_OPTS}
+try pdo-service-db add --url http://${F_SERVICE_HOST}:7103 --name es7103 --type eservice ${PSHELL_OPTS}
+try pdo-service-db add --url http://${F_SERVICE_HOST}:7104 --name es7104 --type eservice ${PSHELL_OPTS}
+try pdo-service-db add --url http://${F_SERVICE_HOST}:7105 --name es7105 --type eservice ${PSHELL_OPTS}
+
+try pdo-service-groups clear
+try pdo-eservice create --group test1
+try pdo-eservice add --group test1 --url http://${F_SERVICE_HOST}:7101 http://${F_SERVICE_HOST}:7102
+try pdo-eservice add --group test1 --name es7103 es7104
+
+# -----------------------------------------------------------------
 say start request test
 # -----------------------------------------------------------------
 try pdo-test-request \
@@ -183,13 +203,13 @@ if [ ! -f ${CONTRACT_FILE} ]; then
 fi
 try ${PDO_HOME}/bin/pdo-create.psh \
     ${PSHELL_OPTS} \
-    --identity user1 --psgroup all --esgroup all --ssgroup all \
+    --client-identity user1 --psgroup all --esgroup all --ssgroup all \
     --pdo_file ${SAVE_FILE} --source ${CONTRACT_FILE} --class mock-contract
 
 say invalid method, this should fail
 ${PDO_HOME}/bin/pdo-invoke.psh \
     ${PSHELL_OPTS} \
-    --identity user1 --pdo_file ${SAVE_FILE} --method no-such-method
+    --client-identity user1 --pdo_file ${SAVE_FILE} --method no-such-method
 if [ $? == 0 ]; then
     die mock contract test succeeded though it should have failed
 fi
@@ -197,7 +217,7 @@ fi
 say policy violation with identity, this should fail
 ${PDO_HOME}/bin/pdo-invoke.psh \
     ${PSHELL_OPTS} \
-    --identity user2 --pdo_file ${SAVE_FILE} --method get_value
+    --client-identity user2 --pdo_file ${SAVE_FILE} --method get_value
 if [ $? == 0 ]; then
     die mock contract test succeeded though it should have failed
 fi
