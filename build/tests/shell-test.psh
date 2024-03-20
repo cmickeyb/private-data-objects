@@ -31,57 +31,9 @@ set -s ERROR  -v "\033[91m"
 set -s WARN   -v "\033[93m"
 set -s INFO   -v "\033[92m"
 
-## echo running tests on ${service_host}
-
 ## -----------------------------------------------------------------
-echo ${HEADER}create the initial service database ${ENDC}
+echo ${ERROR} This test assumes that the service and service groups databases are initialized ${ENDC}
 ## -----------------------------------------------------------------
-## create an eservice db with the known enclave services
-service_db clear
-service_db add --type eservice --url http://${service_host}:7101 --name eservice1
-service_db add --type eservice --url http://${service_host}:7102 --name eservice2
-service_db add --type eservice --url http://${service_host}:7103 --name eservice3
-service_db add --type eservice --url http://${service_host}:7104 --name eservice4
-service_db add --type eservice --url http://${service_host}:7105 --name eservice5
-
-service_db add --type pservice --url http://${service_host}:7001 --name pservice1
-service_db add --type pservice --url http://${service_host}:7002 --name pservice2
-service_db add --type pservice --url http://${service_host}:7003 --name pservice3
-service_db add --type pservice --url http://${service_host}:7004 --name pservice4
-service_db add --type pservice --url http://${service_host}:7005 --name pservice5
-
-service_db add --type sservice --url http://${service_host}:7201 --name sservice1
-service_db add --type sservice --url http://${service_host}:7202 --name sservice2
-service_db add --type sservice --url http://${service_host}:7203 --name sservice3
-service_db add --type sservice --url http://${service_host}:7204 --name sservice4
-service_db add --type sservice --url http://${service_host}:7205 --name sservice5
-
-## -----------------------------------------------------------------
-echo ${HEADER}create the initial groups database ${ENDC}
-## -----------------------------------------------------------------
-service_groups clear
-
-set -s persistent_storage_service -v http://${service_host}:7201
-
-pservice create --group default --name pservice1 pservice2 pservice3
-pservice create --group p1 --name pservice3 pservice4 pservice5
-pservice create --group all --name pservice1 pservice2 pservice3 pservice4 pservice5
-
-eservice create --group default --name eservice1 eservice2 eservice3
-eservice create --group e1 --name eservice3 eservice4 eservice5
-eservice create --group all --name eservice1 eservice2 eservice3 eservice4 eservice5
-
-sservice create --group default --name sservice1 sservice2 sservice3
-sservice set --group default --duration 120 --replicas 2 --persistent ${persistent_storage_service}
-
-sservice create --group s1 --name sservice3 sservice4 sservice5
-sservice set --group s1 --duration 120 --replicas 2 --persistent ${persistent_storage_service}
-
-sservice create --group s2 --name sservice1 sservice2
-sservice set --group s2 --duration 120 --replicas 1 --persistent ${persistent_storage_service}
-
-sservice create --group all --name sservice1 sservice2 sservice3 sservice4 sservice5
-sservice set --group all --duration 3600 --replicas 3 --persistent ${persistent_storage_service}
 
 ## create some contracts
 set -s contract1 -r 32
