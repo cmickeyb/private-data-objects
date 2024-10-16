@@ -14,31 +14,27 @@
 # ------------------------------------------------------------------------------
 version: "3.4"
 
+# Note that we do not need to specify PDO_HOSTNAME or PDO_LEDGER_URL
+# (or the corresponding --inteface or --ledger switches) for the test
+# scripts because they are hard coded in run_*_tests.sh for each of the
+# containers.
+
 services:
   ccf_container:
-    build:
-      args:
-        PDO_VERSION: ${PDO_VERSION}
-        PDO_HOSTNAME: localhost
-        PDO_LEDGER_URL: http://localhost:6600
+    environment:
+      - PDO_VERSION=${PDO_VERSION}
     entrypoint: /project/pdo/tools/run_ccf_tests.sh
 
   services_container:
-    build:
-      args:
-        PDO_VERSION: ${PDO_VERSION}
-        PDO_HOSTNAME: localhost
-        PDO_LEDGER_URL: http://localhost:6600
-        PDO_LOG_LEVEL: ${PDO_LOG_LEVEL:-info}
-        PDO_DEBUG_BUILD: ${PDO_DEBUG_BUILD:-0}
+    environment:
+      - PDO_VERSION=${PDO_VERSION}
+      - PDO_LOG_LEVEL=${PDO_LOG_LEVEL:-info}
+      - PDO_DEBUG_BUILD=${PDO_DEBUG_BUILD:-1}
     entrypoint: /project/pdo/tools/run_services_tests.sh
 
   client_container:
-    build:
-      args:
-        PDO_VERSION: ${PDO_VERSION}
-        PDO_HOSTNAME: localhost
-        PDO_LEDGER_URL: http://localhost:6600
-        PDO_LOG_LEVEL: ${PDO_LOG_LEVEL:-info}
-        PDO_DEBUG_BUILD: ${PDO_DEBUG_BUILD:-0}
+    environment:
+      - PDO_VERSION=${PDO_VERSION}
+      - PDO_LOG_LEVEL=${PDO_LOG_LEVEL:-info}
+      - PDO_DEBUG_BUILD=${PDO_DEBUG_BUILD:-1}
     entrypoint: /project/pdo/tools/run_client_tests.sh

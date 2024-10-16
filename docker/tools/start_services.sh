@@ -26,6 +26,7 @@ SCRIPT_NAME=$(basename ${BASH_SOURCE[-1]} )
 # -----------------------------------------------------------------
 # Process command line arguments
 # -----------------------------------------------------------------
+F_COUNT=5
 F_LOGLEVEL=
 F_MODE=build
 F_REGISTER=no
@@ -36,8 +37,8 @@ F_LEDGER_URL=
 F_USAGE='-c|--count -i|--interface [hostname] -1|--ledger [url] "
 F_USAGE+="--loglevel [debug|info|warn] -m|--mode [build|copy|skip] -r|--register'
 
-SHORT_OPTS='i:l:m:r'
-LONG_OPTS='interface:,ledger:,loglevel:,mode:,register'
+SHORT_OPTS='c:i:l:m:r'
+LONG_OPTS='count:,interface:,ledger:,loglevel:,mode:,register'
 
 TEMP=$(getopt -o ${SHORT_OPTS} --long ${LONG_OPTS} -n "${SCRIPT_NAME}" -- "$@")
 if [ $? != 0 ] ; then echo "Usage: ${SCRIPT_NAME} ${F_USAGE}" >&2 ; exit 1 ; fi
@@ -73,10 +74,23 @@ export PDO_LEDGER_ADDRESS=$(force_to_ip ${PDO_HOSTNAME})
 export PDO_LEDGER_URL=${PDO_LEDGER_URL:-http://${PDO_LEDGER_ADDRESS}:6600}
 if [ ! -z "${F_LEDGER_URL}" ] ; then
     export PDO_LEDGER_URL=${F_LEDGER_URL}
+    export PDO_LEDGER_ADDRESS=$( echo $PDO_LEDGER_URL | awk -F[/:] '{print $4}' )
 fi
 
-export no_proxy=$PDO_HOSTNAME,$no_proxy
-export NO_PROXY=$PDO_HOSTNAME,$NO_PROXY
+check_pdo_runtime_env
+
+export no_proxy=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$no_proxy
+export NO_PROXY=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$NO_PROXY
+
+# -----------------------------------------------------------------
+yell copy sgx keys
+# -----------------------------------------------------------------
+# copy any keys in the SGX directory, ignore any errors if no keys exist
+cp ${XFER_DIR}/services/keys/sgx/* ${PDO_SGX_KEY_ROOT} 2>/dev/null
+
+# -----------------------------------------------------------------
+yell Register with ledger: ${F_REGISTER}
+# -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
 # Handle the configuration of the services
@@ -84,7 +98,7 @@ export NO_PROXY=$PDO_HOSTNAME,$NO_PROXY
 if [ "${F_MODE,,}" == "build" ]; then
     yell configure services for host $PDO_HOSTNAME and ledger $PDO_LEDGER_URL
     try ${PDO_INSTALL_ROOT}/bin/pdo-configure-services -t ${PDO_SOURCE_ROOT}/build/template -o ${PDO_HOME}\
-        --count 5 5 5
+        --count ${F_COUNT} ${F_COUNT} ${F_COUNT}
 elif [ "${F_MODE,,}" == "copy" ]; then
     yell copy the configuration from xfer/services/etc and xfer/services/keys
     try mkdir -p ${PDO_HOME}/etc ${PDO_HOME}/keys
@@ -111,6 +125,13 @@ try cp ${XFER_DIR}/ccf/keys/networkcert.pem ${PDO_LEDGER_KEY_ROOT}/
 yell register the enclave if necessary
 # -----------------------------------------------------------------
 if [ "${F_REGISTER,,}" == 'yes' ]; then
+    if [ ! -f ${XFER_DIR}/ccf/keys/memberccf_privk.pem ] ; then
+        die unable to locate CCF policies keys
+    fi
+
+    try cp ${XFER_DIR}/ccf/keys/memberccf_cert.pem ${PDO_LEDGER_KEY_ROOT}/
+    try cp ${XFER_DIR}/ccf/keys/memberccf_privk.pem ${PDO_LEDGER_KEY_ROOT}/
+
     try make -C ${PDO_SOURCE_ROOT}/build register
 fi
 
@@ -119,9 +140,9 @@ yell start the services
 # -----------------------------------------------------------------
 . ${PDO_INSTALL_ROOT}/bin/activate
 
-try ${PDO_HOME}/bin/ss-start.sh --output ${PDO_HOME}/logs ${F_LOG_LEVEL} ${F_CLEAN}
-try ${PDO_HOME}/bin/ps-start.sh --output ${PDO_HOME}/logs ${F_LOG_LEVEL} ${F_CLEAN}
-try ${PDO_HOME}/bin/es-start.sh --output ${PDO_HOME}/logs ${F_LOG_LEVEL} ${F_CLEAN}
+try ${PDO_HOME}/bin/ss-start.sh --output ${PDO_HOME}/logs ${F_LOGLEVEL} ${F_CLEAN}
+try ${PDO_HOME}/bin/ps-start.sh --output ${PDO_HOME}/logs ${F_LOGLEVEL} ${F_CLEAN}
+try ${PDO_HOME}/bin/es-start.sh --output ${PDO_HOME}/logs ${F_LOGLEVEL} ${F_CLEAN}
 
 # save the site.toml file if the configuration files were generated here
 if [ "${F_MODE,,}" == "build" ]; then

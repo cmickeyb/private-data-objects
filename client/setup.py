@@ -37,7 +37,7 @@ log_dir = os.path.join(install_root_dir, "logs")
 key_dir = os.path.join(install_root_dir, "keys")
 
 data_files = [
-    (bin_dir, [ 'bin/pdo-create.psh', 'bin/pdo-invoke.psh', 'bin/pdo-create-service-groups.psh' ]),
+    (bin_dir, [ 'bin/pdo-create.psh', 'bin/pdo-invoke.psh' ]),
     (etc_dir, [ 'etc/sample_client.toml' ])
 ]
 
@@ -55,13 +55,15 @@ setup(name='pdo_client',
       packages = find_packages(),
       namespace_packages=['pdo'],
       install_requires = [
-          'pyparsing',
+          'cachetools',
+          'colorama',
           'toml',
       ],
       data_files = data_files,
       entry_points = {
           'console_scripts': [
               'pdo-shell = pdo.client.scripts.ShellCLI:Main',
+              'pdo-collection = pdo.client.scripts.EntryPoints:run_shell_collection',
               'pdo-contract = pdo.client.scripts.EntryPoints:run_shell_contract',
               'pdo-context = pdo.client.scripts.EntryPoints:run_shell_context',
               'pdo-ledger = pdo.client.scripts.EntryPoints:run_shell_ledger',

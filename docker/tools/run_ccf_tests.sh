@@ -21,6 +21,8 @@ export PDO_HOSTNAME=localhost
 export PDO_LEDGER_ADDRESS=$(force_to_ip ${PDO_HOSTNAME})
 export PDO_LEDGER_URL="http://${PDO_LEDGER_ADDRESS}:6600"
 
+check_pdo_runtime_env
+
 export no_proxy=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$no_proxy
 export NO_PROXY=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$NO_PROXY
 
@@ -32,9 +34,10 @@ mkdir -p ${PDO_LEDGER_KEY_ROOT}
 # -----------------------------------------------------------------
 yell start the ccf service
 # -----------------------------------------------------------------
-. ${PDO_HOME}/ccf/bin/activate
-yell ${PDO_HOME}/ccf/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}
-try ${PDO_HOME}/ccf/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}
+yell ${CCF_LEDGER_DIR}/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}  \
+    --pdo-dir ${CCF_PDO_DIR} --ledger-dir ${CCF_LEDGER_DIR}
+try ${CCF_LEDGER_DIR}/bin/start_ccf_network.sh -i ${PDO_LEDGER_ADDRESS}  \
+    --pdo-dir ${CCF_PDO_DIR} --ledger-dir ${CCF_LEDGER_DIR}
 
 # -----------------------------------------------------------------
 yell copy the ledger keys

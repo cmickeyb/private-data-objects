@@ -13,14 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# these variables should be unused during build
-export PDO_HOSTNAME=
-export PDO_LEDGER_URL=
+# to get build without (ignored) errors
+export PDO_HOSTNAME=localhost
+export PDO_LEDGER_URL=https://127.0.0.1:6600
 
 source /opt/intel/sgxsdk/environment
 source /project/pdo/tools/environment.sh
 
-make -C ${PDO_SOURCE_ROOT}/build environment
-make -C ${PDO_SOURCE_ROOT}/build template
-make -C ${PDO_SOURCE_ROOT}/build system-keys
-make -C ${PDO_SOURCE_ROOT}/build verified-build
+source ${PDO_SOURCE_ROOT}/bin/lib/common.sh
+check_pdo_build_env
+
+# -----------------------------------------------------------------
+yell Build and install services into ${PDO_INSTALL_ROOT}
+# -----------------------------------------------------------------
+try make -C ${PDO_SOURCE_ROOT}/build environment
+try make -C ${PDO_SOURCE_ROOT}/build system-keys
+try make -C ${PDO_SOURCE_ROOT}/build verified-build
+try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf install-python

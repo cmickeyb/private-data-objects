@@ -64,7 +64,7 @@ class Dependencies(object) :
 
     ## -------------------------------------------------------
     def FindDependency(self, contractid, statehash) :
-        logger.debug('find dependency for %s, %s', contractid, statehash)
+        logger.debug(f'find dependency for {contractid}:{statehash}')
 
         with self.__lock__ :
             txnid = self.__get(contractid, statehash)
@@ -79,7 +79,7 @@ class Dependencies(object) :
                 self.__set(contractid, statehash, txnid)
                 return txnid
             except Exception as e :
-                logger.info('unable to find dependency for %s:%s; failed to retrieve the transaction', contractid, statehash)
+                logger.warning(f'failed to retrieve contract state for {contractid}:{statehash}; {e}')
                 return None
 
     ## -------------------------------------------------------
@@ -320,13 +320,9 @@ def __submit_update_transaction__(response, ledger_config, **extra_params):
 # -----------------------------------------------------------------
 class TransactionRequest(object):
 
-    def __init__(self, ledger_config, commit_id, wait_parameter_for_ledger = None):
+    def __init__(self, ledger_config, commit_id) :
 
         self.ledger_config = ledger_config
-        # add the wait parameter to the ledger config, if there is one.
-        # Question: does CCF (or the submitter) use this parameter?
-        if wait_parameter_for_ledger:
-            self.ledger_config['wait'] = wait_parameter_for_ledger
         self.commit_id = commit_id
 
         self.is_completed = False

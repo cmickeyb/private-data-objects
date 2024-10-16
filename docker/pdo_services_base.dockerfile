@@ -17,15 +17,12 @@
 ARG PDO_VERSION
 FROM pdo_base:${PDO_VERSION}
 
-ARG UBUNTU_VERSION=20.04
-ARG UBUNTU_NAME=focal
+ARG UBUNTU_VERSION=22.04
+ARG UBUNTU_NAME=jammy
 
 ARG SGX=2.22
 ARG OPENSSL=3.0.12
 ARG SGXSSL=3.0_Rev1
-
-ARG SGX_MODE=SIM
-ENV SGX_MODE $SGX_MODE
 
 RUN echo "deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu ${UBUNTU_NAME} main" >> /etc/apt/sources.list \
  && wget -qO - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add - \
@@ -59,8 +56,7 @@ ENV SGX_SDK=/opt/intel/sgxsdk
 #   has 2.30 but Intel ships binary distro for 2.32.51.20190719
 # -----------------------------------------------------------------
 WORKDIR /opt/intel
-RUN [ "$UBUNTU_VERSION" = "20.04" ] \
-  && SGX_SDK_BINUTILS_REPO=https://download.01.org/intel-sgx/sgx-linux/${SGX} \
+RUN SGX_SDK_BINUTILS_REPO=https://download.01.org/intel-sgx/sgx-linux/${SGX} \
   && SGX_SDK_BINUTILS_FILE=$(wget -P /tmp --delete-after --spider --recursive --level=1 --no-parent ${SGX_SDK_BINUTILS_REPO} 2>&1 | perl  -ne 'if (m|'${SGX_SDK_BINUTILS_REPO}'/(as.ld.objdump.*)|) { print "$1\n"; }') \
   && wget -q -P /tmp ${SGX_SDK_BINUTILS_REPO}/${SGX_SDK_BINUTILS_FILE} \
   && mkdir sgxsdk.extras \
@@ -72,17 +68,16 @@ ENV PATH="/opt/intel/sgxsdk.extras/external/toolset/ubuntu${UBUNTU_VERSION}:${PA
 
 # -----------------------------------------------------------------
 # SGXSSL
-# Note that we build sgxssl with SIM mode; the SGX_MODE only changes
-# the mode for running tests and we do not want the tests run in HW
-# mode
+# Note that the SGX_MODE variable only determines the mode for
+# running tests. We do not want the tests to run in HW mode here.
+# This allows us to keep this image mode-agnostic.
 # -----------------------------------------------------------------
 WORKDIR /tmp
 RUN . /opt/intel/sgxsdk/environment \
     && git clone --depth 1 --branch ${SGXSSL} 'https://github.com/intel/intel-sgx-ssl.git' \
     && wget -q -P /tmp/intel-sgx-ssl/openssl_source https://www.openssl.org/source/openssl-${OPENSSL}.tar.gz \
     && cd /tmp/intel-sgx-ssl/Linux \
-    && if [ $SGX_MODE = SIM ] ; then SKIP_INTELCPU_CHECK=TRUE ; else SKIP_INTELCPU_CHECK=FALSE ; fi \
-    && bash -c "make SKIP_INTELCPU_CHECK=$SKIP_INTELCPU_CHECK SGX_MODE=$SGX_MODE NO_THREADS=1 DESTDIR=/opt/intel/sgxssl VERBOSE=0 all &> /dev/null" \
+    && bash -c "make SKIP_INTELCPU_CHECK=TRUE SGX_MODE=SIM NO_THREADS=1 DESTDIR=/opt/intel/sgxssl VERBOSE=0 all &> /dev/null" \
     && make install \
     && make clean \
     && rm -rf /tmp/intel-sgx-ssl

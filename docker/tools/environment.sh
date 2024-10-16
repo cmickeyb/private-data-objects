@@ -24,8 +24,8 @@
 export SGX_MODE=${SGX_MODE:-SIM}
 export PDO_LEDGER_TYPE=${PDO_LEDGER_TYPE:-ccf}
 export PDO_INTERPRETER=${PDO_INTERPRETER:-wawaka}
-export WASM_MEM_CONFIG=${WASM_MEM_CONFIG:-MEDIUM}
-export PDO_DEBUG_BUILD=${PDO_DEBUG_BUILD:-0}
+export PDO_MEMORY_CONFIG=${PDO_MEMORY_CONFIG:-MEDIUM}
+export PDO_DEBUG_BUILD=${PDO_DEBUG_BUILD:-1}
 
 # these variables are internal to the layout of the container and immutable
 export PDO_SOURCE_ROOT=/project/pdo/src
@@ -42,23 +42,14 @@ else
     export PDO_DEFAULT_SIGCURVE=SECP256K1
 fi
 
-export CCF_BASE=/opt/ccf_virtual
 export XFER_DIR=${XFER_DIR:-/project/pdo/xfer}
 
-# if the container is running HW mode, then we will grab the
-# SGX keys from the xfer directory; we know that the default
-# keys must be overridden
-if [ ${SGX_MODE} == "HW" ]; then
-    export PDO_SGX_KEY_ROOT=${XFER_DIR}/services/keys/sgx
-else
-    export PDO_SGX_KEY_ROOT=${PDO_SOURCE_ROOT}/build/keys/sgx_mode_${SGX_MODE,,}
-fi
+export PDO_SGX_KEY_ROOT=${PDO_SOURCE_ROOT}/build/keys/sgx_mode_${SGX_MODE,,}
 
-# this variable is needed for the build for signing the
-# eservice and pservice enclaves
-export PDO_ENCLAVE_CODE_SIGN_PEM=${PDO_SGX_KEY_ROOT}/enclave_code_sign.pem
-
-# these are only used for configuration and registration
-# they are not used at build or run time
-export PDO_SPID="$(cat ${PDO_SGX_KEY_ROOT}/sgx_spid.txt)"
-export PDO_SPID_API_KEY="$(cat ${PDO_SGX_KEY_ROOT}/sgx_spid_api_key.txt)"
+# set up the ccf directories, ccf_base is where the ccf
+# core is installed, ccf_pdo_dir is where the pdo tp
+# components will be installed, and ccf_ledger_dir is
+# where the ccf python virtual environment will be built
+export CCF_BASE=/opt/ccf_virtual
+export CCF_PDO_DIR=${PDO_INSTALL_ROOT}
+export CCF_LEDGER_DIR=${PDO_HOME}/ccf

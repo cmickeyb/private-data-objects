@@ -45,6 +45,7 @@ from twisted.python.threadpool import ThreadPool
 from twisted.internet import reactor, defer, task
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.web.wsgi import WSGIResource
+from twisted.internet.error import ReactorNotRunning
 
 ## ----------------------------------------------------------------
 def ErrorResponse(request, error_code, msg) :
@@ -87,7 +88,7 @@ def StartGarbageCollector(block_store, gcinterval) :
 ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 def __shutdown__(*args) :
-    logger.warn('shutdown request received')
+    logger.warning('shutdown request received')
     reactor.callLater(1, reactor.stop)
 
 def StartStorageService(config, block_store, service_keys) :
@@ -143,9 +144,9 @@ def RunService(block_store) :
     try :
         reactor.run()
     except ReactorNotRunning:
-        logger.warn('shutdown')
+        logger.warning('shutdown')
     except :
-        logger.warn('shutdown')
+        logger.warning('shutdown')
 
     # sync and close the database
     block_store.close()

@@ -13,11 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /project/pdo/tools/environment.sh
-
-# these variables should be unused during build
 export PDO_HOSTNAME=
 export PDO_LEDGER_URL=
 
-make -C ${PDO_SOURCE_ROOT}/ledgers/ccf environment
-make -C ${PDO_SOURCE_ROOT}/ledgers/ccf install
+source /project/pdo/tools/environment.sh
+source ${PDO_SOURCE_ROOT}/bin/lib/common.sh
+check_pdo_build_env
+
+# -----------------------------------------------------------------
+yell Build and install CCF into ${PDO_INSTALL_ROOT}
+# -----------------------------------------------------------------
+try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf environment
+try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf install

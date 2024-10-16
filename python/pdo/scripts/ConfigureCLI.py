@@ -134,9 +134,6 @@ def configure_services() :
     for n in range(1, options.count[2]+1) :
         expand_service(options, 'pservice', 'ProvisioningService', n)
 
-    # Generate enclave configuration file
-    expand_helper(options, 'enclave.toml')
-
     filename = os.path.join(options.output_directory, 'etc', 'site.toml')
     with open(filename, 'w') as outfile:
         toml.dump(site_information, outfile)
@@ -208,22 +205,6 @@ def configure_users() :
     for u in options.key_names :
         filename = os.path.join(options.output_directory, 'keys', u)
         generate_service_keys(filename)
-
-    # Generate the site.psh
-
-    # This will reproduce the current method of creating site.psh but
-    # this will need to be rethought in the future. Site.psh is really
-    # useful for configuring the test setup, but not representative of
-    # the configuration needed for a multi-server deployment.
-
-    input_site_file = os.path.join(options.template_directory, "site.psh")
-    with open(input_site_file, "r") as sf :
-        lines = sf.readlines()
-
-    output_site_file = os.path.join(options.output_directory, "etc", "site.psh")
-    with open(output_site_file, "w") as sf :
-        for line in lines:
-            sf.write(re.sub(r'SERVICE_HOST', options.host, line))
 
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------

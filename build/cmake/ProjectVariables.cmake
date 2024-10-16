@@ -20,7 +20,7 @@
 ADD_COMPILE_OPTIONS(-m64 -fvisibility=hidden -fpie -fPIC -fstack-protector)
 ADD_COMPILE_OPTIONS($<$<COMPILE_LANGUAGE:CXX>:-std=c++11>)
 
-OPTION(PDO_DEBUG_BUILD "Build with debugging turned on" FALSE)
+OPTION(PDO_DEBUG_BUILD "Build with debugging turned on" 1)
 
 IF (DEFINED ENV{PDO_DEBUG_BUILD})
   SET(PDO_DEBUG_BUILD $ENV{PDO_DEBUG_BUILD})
@@ -55,3 +55,39 @@ ELSE()
   ADD_COMPILE_OPTIONS(-Wno-deprecated)
   ADD_COMPILE_OPTIONS(-Wno-deprecated-declarations)
 ENDIF()
+
+IF (NOT DEFINED ENV{PDO_INSTALL_ROOT})
+  MESSAGE(FATAL_ERROR "PDO_INSTALL_ROOT not defined")
+ENDIF()
+SET(PDO_INSTALL_ROOT $ENV{PDO_INSTALL_ROOT})
+
+IF (NOT DEFINED ENV{PDO_SOURCE_ROOT})
+  MESSAGE(FATAL_ERROR "PDO_SOURCE_ROOT not defined")
+ENDIF()
+SET(PDO_SOURCE_ROOT $ENV{PDO_SOURCE_ROOT})
+
+# The memory size option configures enclave and interpreter memory
+# size values. The variable may have the value of "SMALL", "MEDIUM" or
+# "LARGE". This is a project variable because the configurations
+# depend on one another (the interpreter heap size must fit into the
+# enclave heap, for example).
+SET(PDO_MEMORY_CONFIG "MEDIUM" CACHE STRING "Set memory size parameters for enclave and interpreter")
+IF (DEFINED ENV{PDO_MEMORY_CONFIG})
+  SET(PDO_MEMORY_CONFIG $ENV{PDO_MEMORY_CONFIG})
+ENDIF()
+SET(MEMORY_SIZE_OPTIONS "SMALL" "MEDIUM" "LARGE")
+IF (NOT ${PDO_MEMORY_CONFIG} IN_LIST MEMORY_SIZE_OPTIONS)
+  MESSAGE(FATAL_ERROR "Invalid memory size; ${PDO_MEMORY_CONFIG}")
+ENDIF()
+
+# Get the current version using the get_version
+# utility; note that this will provide 0.0.0 as
+# the version if something goes wrong (like running
+# without any annotated version tags)
+EXECUTE_PROCESS(
+  COMMAND ./get_version
+  WORKING_DIRECTORY ${PDO_SOURCE_ROOT}/bin
+  OUTPUT_VARIABLE PDO_VERSION
+  ERROR_QUIET
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)

@@ -14,7 +14,6 @@
 # limitations under the License.
 
 # Tests are run EXCLUSIVELY with all services running on localhost
-
 source /opt/intel/sgxsdk/environment
 source /project/pdo/tools/environment.sh
 source ${PDO_HOME}/bin/lib/common.sh
@@ -23,8 +22,16 @@ export PDO_HOSTNAME=localhost
 export PDO_LEDGER_ADDRESS=$(force_to_ip ${PDO_HOSTNAME})
 export PDO_LEDGER_URL="http://${PDO_LEDGER_ADDRESS}:6600"
 
+check_pdo_runtime_env
+
 export no_proxy=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$no_proxy
 export NO_PROXY=$PDO_HOSTNAME,$PDO_LEDGER_ADDRESS,$NO_PROXY
+
+# -----------------------------------------------------------------
+yell copy sgx keys
+# -----------------------------------------------------------------
+# copy any keys in the SGX directory, ignore any errors if no keys exist
+cp ${XFER_DIR}/services/keys/sgx/* ${PDO_SGX_KEY_ROOT} 2>/dev/null
 
 # -----------------------------------------------------------------
 yell configure services for host $PDO_HOSTNAME and ledger $PDO_LEDGER_URL
@@ -55,6 +62,13 @@ yell check for registration
 # -----------------------------------------------------------------
 # this probably requires additional CCF keys, need to test this
 if [ "$SGX_MODE" == "HW" ]; then
+    if [ ! -f ${XFER_DIR}/ccf/keys/memberccf_privk.pem ] ; then
+        die unable to locate CCF policies keys
+    fi
+
+    try cp ${XFER_DIR}/ccf/keys/memberccf_cert.pem ${PDO_LEDGER_KEY_ROOT}/
+    try cp ${XFER_DIR}/ccf/keys/memberccf_privk.pem ${PDO_LEDGER_KEY_ROOT}/
+
     try make -C ${PDO_SOURCE_ROOT}/build register
 fi
 

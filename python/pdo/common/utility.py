@@ -50,7 +50,19 @@ def deprecated(func):
     @functools.wraps(func)
     def new_func(*args, **kwargs):
         stack = inspect.stack()
-        logger.warn('invocation of deprecated function %s by %s in file %s', func.__name__, stack[1][3], stack[1][1])
+        logger.warning('invocation of deprecated function %s by %s in file %s', func.__name__, stack[1][3], stack[1][1])
+        return func(*args, **kwargs)
+
+    return new_func
+
+def experimental(func):
+    """decorator to mark functions as experimental, logs a warning
+    with information about the function and the caller
+    """
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        stack = inspect.stack()
+        logger.warning('invocation of experimental function %s by %s in file %s', func.__name__, stack[1][3], stack[1][1])
         return func(*args, **kwargs)
 
     return new_func

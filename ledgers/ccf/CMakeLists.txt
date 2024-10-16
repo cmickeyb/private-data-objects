@@ -14,16 +14,15 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 
-INCLUDE(${CCF_DIR}/cmake/preproject.cmake)
-PROJECT(pdoenc LANGUAGES C CXX)
-INCLUDE(${CCF_DIR}/cmake/ccf_app.cmake)
+IF (NOT DEFINED ENV{PDO_SOURCE_ROOT})
+  MESSAGE(FATAL_ERROR "PDO_SOURCE_ROOT not defined")
+ENDIF()
+SET(PDO_SOURCE_ROOT $ENV{PDO_SOURCE_ROOT})
 
-FIND_PACKAGE(ccf_virtual REQUIRED)
+LIST(APPEND CMAKE_MODULE_PATH "${PDO_SOURCE_ROOT}/build/cmake")
+INCLUDE(ProjectVariables)
 
-# Add the PDO transaction processor target
-add_ccf_app(pdoenc
-  SRCS transaction_processor/pdo_tp.cpp transaction_processor/verify_signatures.cpp
-  INCLUDE_DIRS ${CCF_DIR}/include/ccf ${CCF_DIR}/include/3rdparty ${CCF_DIR}/include
-)
+PROJECT(pdo_ccf_ledger)
 
-INSTALL(TARGETS pdoenc.virtual DESTINATION lib)
+INCLUDE(Python)
+BUILD_WHEEL(pdo_ccf_ledger)

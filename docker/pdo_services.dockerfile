@@ -14,15 +14,23 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
+# syntax = docker/dockerfile:experimental
+# above enable build-kit extension for 'RUN --mount=type= ..' extension used below
+# to cache pip downloads between builds, cutting down noticeably build time.
+# Note that cache is cleaned with the "uusal" docker prune commans, e.g., docker builder prune.
+
 ARG PDO_VERSION
 FROM pdo_services_base:${PDO_VERSION}
 
 # -----------------------------------------------------------------
 # set up the PDO sources
 # -----------------------------------------------------------------
-ARG REBUILD 0
+ARG REBUILD=0
 
-ARG PDO_DEBUG_BUILD=0
+ARG SGX_MODE=SIM
+ENV SGX_MODE $SGX_MODE
+
+ARG PDO_DEBUG_BUILD=1
 ENV PDO_DEBUG_BUILD=${PDO_DEBUG_BUILD}
 
 ARG PDO_LEDGER_TYPE=ccf
@@ -31,8 +39,8 @@ ENV PDO_LEDGER_TYPE=${PDO_LEDGER_TYPE}
 ARG PDO_INTERPRETER=wawaka
 ENV PDO_INTERPRETER=${PDO_INTERPRETER}
 
-ARG WASM_MEM_CONFIG=MEDIUM
-ENV WASM_MEM_CONFIG=${WASM_MEM_CONFIG}
+ARG PDO_MEMORY_CONFIG=MEDIUM
+ENV PDO_MEMORY_CONFIG=${PDO_MEMORY_CONFIG}
 
 ARG PDO_LOG_LEVEL=info
 ENV PDO_LOG_LEVEL=${PDO_LOG_LEVEL}
@@ -48,18 +56,16 @@ WORKDIR /project/pdo/tools
 COPY --chown=${UNAME}:${UNAME} tools/*.sh ./
 
 # built it!
-RUN /project/pdo/tools/build_services.sh
+ARG UID=1000
+ARG GID=${UID}
+RUN --mount=type=cache,uid=${UID},gid=${GID},target=/project/pdo/.cache/pip \
+    /project/pdo/tools/build_services.sh
 
 # Network ports for running services
 EXPOSE 7001 7002 7003 7004 7005
 EXPOSE 7101 7102 7103 7104 7105
 EXPOSE 7201 7202 7203 7204 7205
 
-ARG PDO_HOSTNAME
-ENV PDO_HOSTNAME=$PDO_HOSTNAME
-
-ARG PDO_LEDGER_URL
-ENV PDO_LEDGER_URL=$PDO_LEDGER_URL
 
 # Note that the entry point when specified with exec syntax
 # can be extended through the docker run interface far more

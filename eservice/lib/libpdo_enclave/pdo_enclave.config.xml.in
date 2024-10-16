@@ -17,11 +17,14 @@ limitations under the License.
 <EnclaveConfiguration>
   <ProdID>0x90E7</ProdID>
   <ISVSVN>1</ISVSVN>
-  <StackMaxSize>0x40000</StackMaxSize>
-  <HeapMaxSize>0x800000</HeapMaxSize>
-  <TCSNum>1</TCSNum>
+  <StackMaxSize>${ENCLAVE_STACK_SIZE}</StackMaxSize>
+  <HeapMaxSize>${ENCLAVE_HEAP_SIZE}</HeapMaxSize>
+  <ReservedMemMaxSize>${ENCLAVE_RESERVED_SIZE}</ReservedMemMaxSize>
+  <ReservedMemInitSize>${ENCLAVE_RESERVED_SIZE}</ReservedMemInitSize>
+  <ReservedMemExecutable>1</ReservedMemExecutable>
+  <TCSNum>2</TCSNum>
   <TCSPolicy>1</TCSPolicy>
-  <DisableDebug>0</DisableDebug>
+  <DisableDebug>${DISABLE_DEBUG}</DisableDebug>
   <MiscSelect>0</MiscSelect>
   <MiscMask>0xFFFFFFFF</MiscMask>
 </EnclaveConfiguration>

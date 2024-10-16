@@ -14,6 +14,11 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
+# syntax = docker/dockerfile:experimental
+# above enable build-kit extension for 'RUN --mount=type= ..' extension used below
+# to cache pip downloads between builds, cutting down noticeably build time.
+# Note that cache is cleaned with the "uusal" docker prune commans, e.g., docker builder prune.
+
 ARG PDO_VERSION
 FROM pdo_base:${PDO_VERSION}
 
@@ -25,7 +30,7 @@ ARG UNAME=pdo_client
 ENV UNAME=${UNAME}
 
 ARG UID=1000
-ARG GID=$UID
+ARG GID=${UID}
 
 RUN groupadd -f -g $GID -o $UNAME
 RUN useradd -m -u $UID -g $GID -d /project/pdo -o -s /bin/bash $UNAME
@@ -35,9 +40,9 @@ USER $UNAME
 # -----------------------------------------------------------------
 # set up the PDO sources
 # -----------------------------------------------------------------
-ARG REBUILD 0
+ARG REBUILD=0
 
-ARG PDO_DEBUG_BUILD=0
+ARG PDO_DEBUG_BUILD=1
 ENV PDO_DEBUG_BUILD=${PDO_DEBUG_BUILD}
 
 ARG PDO_LEDGER_TYPE=ccf
@@ -45,9 +50,6 @@ ENV PDO_LEDGER_TYPE=${PDO_LEDGER_TYPE}
 
 ARG PDO_INTERPRETER=wawaka
 ENV PDO_INTERPRETER=${PDO_INTERPRETER}
-
-ARG WASM_MEM_CONFIG=MEDIUM
-ENV WASM_MEM_CONFIG=${WASM_MEM_CONFIG}
 
 ARG PDO_LOG_LEVEL=info
 ENV PDO_LOG_LEVEL=${PDO_LOG_LEVEL}
@@ -63,15 +65,8 @@ WORKDIR /project/pdo/tools
 COPY --chown=${UNAME}:${UNAME} tools/*.sh ./
 
 # build it!!!
-RUN /project/pdo/tools/build_client.sh
+RUN --mount=type=cache,uid=${UID},gid=${GID},target=/project/pdo/.cache/pip \
+    /project/pdo/tools/build_client.sh
 
-ARG PDO_HOSTNAME
-ENV PDO_HOSTNAME=$PDO_HOSTNAME
-
-ARG PDO_LEDGER_URL
-ENV PDO_LEDGER_URL=$PDO_LEDGER_URL
-
-# the client is set up for interactive access; the environment can be
-# set up by source /project/pdo/tools/start_client.sh with the arguments
-# to build a new client environment or copy one from the xfer directory
+RUN ln -s /project/pdo/tools/bashrc_client.sh /project/pdo/.bashrc
 ENTRYPOINT [ "/bin/bash" ]

@@ -19,20 +19,27 @@ using namespace std;
 
 namespace ccf
 {
-
-  struct ContractEnclaveAttestationVerificationPolicy {
+  struct ContractEnclaveAttestionCheckFlag {
     bool check_attestation;
+  };
+
+  DECLARE_JSON_TYPE(ContractEnclaveAttestionCheckFlag);
+  DECLARE_JSON_REQUIRED_FIELDS(ContractEnclaveAttestionCheckFlag,
+    check_attestation);
+
+  struct ContractEnclaveExpectedSGXMeasurements {
     string mrenclave;
     string basename;
     string ias_public_key;
+    bool sgx_debug_flag;
   };
 
-  DECLARE_JSON_TYPE(ContractEnclaveAttestationVerificationPolicy);
-  DECLARE_JSON_REQUIRED_FIELDS(ContractEnclaveAttestationVerificationPolicy,
-    check_attestation,
+  DECLARE_JSON_TYPE(ContractEnclaveExpectedSGXMeasurements);
+  DECLARE_JSON_REQUIRED_FIELDS(ContractEnclaveExpectedSGXMeasurements,
     mrenclave,
     basename,
-    ias_public_key);
+    ias_public_key,
+    sgx_debug_flag);
 
 
   struct ProofData{
@@ -118,12 +125,18 @@ namespace ccf
     };
   };
 
-  struct RegisterContractEnclaveAttestationVerificationPolicy {
+  struct RegisterContractEnclaveAttestionCheckFlag {
     struct In {
       bool check_attestation;
+    };
+  };
+
+   struct RegisterContractEnclaveExpectedSGXMeasurements {
+    struct In {
       string mrenclave;
       string basename;
       string ias_public_key;
+      bool sgx_debug_flag;
     };
   };
 
@@ -138,7 +151,10 @@ namespace ccf
   DECLARE_JSON_REQUIRED_FIELDS(Verify_enclave::Out, verifying_key, encryption_key, proof_data, last_registration_block_context, \
     owner_id, signature);
 
-  DECLARE_JSON_TYPE(RegisterContractEnclaveAttestationVerificationPolicy::In);
-  DECLARE_JSON_REQUIRED_FIELDS(RegisterContractEnclaveAttestationVerificationPolicy::In, check_attestation, mrenclave, basename, ias_public_key);
+  DECLARE_JSON_TYPE(RegisterContractEnclaveAttestionCheckFlag::In);
+  DECLARE_JSON_REQUIRED_FIELDS(RegisterContractEnclaveAttestionCheckFlag::In, check_attestation);
+
+  DECLARE_JSON_TYPE(RegisterContractEnclaveExpectedSGXMeasurements::In);
+  DECLARE_JSON_REQUIRED_FIELDS(RegisterContractEnclaveExpectedSGXMeasurements::In, mrenclave, basename, ias_public_key, sgx_debug_flag);
 
 }

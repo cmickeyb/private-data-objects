@@ -21,6 +21,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unistd.h>
+#include <algorithm>
 
 #include <sgx_uae_epid.h>
 #include "sgx_support.h"
@@ -250,9 +251,15 @@ namespace pdo {
             const HexEncodedString& inSpid
             )
         {
+            // check SPID length
             pdo::error::ThrowIf<pdo::error::ValueError>(
                 inSpid.length() != 32,
                 "Invalid SPID length");
+
+            // check SPID format
+            pdo::error::ThrowIf<pdo::error::ValueError>(
+                ! std::all_of(inSpid.begin(), inSpid.end(), ::isxdigit),
+                "Invalid SPID format");
 
             HexStringToBinary(this->spid.id, sizeof(this->spid.id), inSpid);
         } // Enclave::SetSpid
@@ -349,17 +356,16 @@ namespace pdo {
                 Enclave::QuerySgxStatus();
 
                 sgx_launch_token_t token = { 0 };
-                int flags = SGX_DEBUG_FLAG;
-                pdo::error::ThrowSgxError((SGX_DEBUG_FLAG==0 ? SGX_ERROR_UNEXPECTED:SGX_SUCCESS),
-                    "SGX DEBUG flag is 0 (possible cause: wrong compile flags)");
+
+                pdo::logger::LogV(PDO_LOG_DEBUG, "LoadEnclave, SGX_DEBUG_FLAG: %d", SGX_DEBUG_FLAG);
 
                 // First attempt to load the enclave executable
                 sgx_status_t ret = SGX_SUCCESS;
-                ret = this->CallSgx([this, flags, &token] () {
+                ret = this->CallSgx([this, &token] () {
                         int updated = 0;
                         return sgx_create_enclave(
                             this->enclaveFilePath.c_str(),
-                            flags,
+                            SGX_DEBUG_FLAG,
                             &token,
                             &updated,
                             &this->enclaveId,
