@@ -4,10 +4,7 @@
 
 name: Build and Push PDO Docker Images
 
-on:
-  push:
-    tags:
-      - v*
+on: [push]
 
 env:
   DOCKER_REGISTRY: 'ghcr.io'
