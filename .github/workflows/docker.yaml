@@ -4,7 +4,9 @@
 
 name: Build and Push PDO Docker Images
 
-on: [push]
+on:
+  push:
+    branches: [ "test-ci" ]
 
 env:
   DOCKER_REGISTRY: 'ghcr.io'
@@ -12,7 +14,7 @@ env:
   PDO_LOG_LEVEL: warning
 
 jobs:
-  build_pdo_docker:
+  build:
     name: Build PDO Images
     runs-on: ubuntu-22.04
 
