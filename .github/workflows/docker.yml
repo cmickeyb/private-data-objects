@@ -4,12 +4,17 @@
 
 name: Build and Push PDO Docker Images
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 jobs:
 
   docker_build:
 
+    if: ${{ github.event.name }} == 'workflow_dispatch' or github.event.pull_request.merged == true
     name: Build PDO Images
     runs-on: ubuntu-22.04
 
