@@ -14,7 +14,9 @@ jobs:
 
   docker_build:
 
-    if: ${{ github.event.name }} == 'workflow_dispatch' or github.event.pull_request.merged == true
+    if: >
+      github.event.name == 'workflow_dispatch' ||
+      github.event.name == 'pull_request' && github.event.pull_request.merged == true
     name: Build PDO Images
     runs-on: ubuntu-22.04
 
@@ -31,6 +33,8 @@ jobs:
           echo "Building branch images for $GITHUB_HEAD_REF"
           echo PDO VERSION is $(bin/get_version)
           echo "PDO_VERSION=$(bin/get_version)" >> $GITHUB_ENV
+          echo "EVENT NAME: ${{ github.event.name }}"
+          echo "MERGED: ${{ github.event.pull_request.merged }}"
 
       - name: Build Docker Images
         env:
