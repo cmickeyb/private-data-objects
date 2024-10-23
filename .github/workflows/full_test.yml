@@ -1,0 +1,57 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: PDO Test Suite
+on: [workflow_dispatch, pull_request]
+jobs:
+    pdo_ci:
+        if: "!contains(github.event.commits[0].message, '[skip ci]')"
+        name: PDO Test Suite
+        runs-on: ubuntu-22.04
+
+        strategy:
+            matrix:
+                interpreter: [wawaka, wawaka-opt]
+                pdo_ledger_type: [ccf]
+
+        steps:
+            - name: Check out repo
+              uses: actions/checkout@v4
+              with:
+                submodules: recursive
+                fetch-depth: 0
+                fetch-tags: true
+
+            - name: Display branch name
+              run: |
+                echo "Building branch $GITHUB_HEAD_REF"
+                echo PDO VERSION is $(bin/get_version)
+
+            - name: Build and run tests
+              if: "!contains(github.event.commits[0].message, '[debug]')"
+              env:
+                  PDO_INTERPRETER: ${{ matrix.interpreter }}
+                  PDO_LOG_LEVEL: warning
+              run: |
+                  # The creation of a dummy branch is necessary for the CI tests
+                  # to work on PRs. Based on empirical results, in the absence of
+                  # this command, CI tests work on the main branch and on local
+                  # branches. However, they fail as a PR is created.
+                  git checkout -b ci-test-branch
+                  . build/common-config.sh
+                  make -C docker test
+
+            - name: Build and run tests (DEBUG MODE)
+              if: "contains(github.event.commits[0].message, '[debug]')"
+              env:
+                  PDO_INTERPRETER: ${{ matrix.interpreter }}
+                  PDO_LOG_LEVEL: debug
+              run: |
+                  # The creation of a dummy branch is necessary for the CI tests
+                  # to work on PRs. Based on empirical results, in the absence of
+                  # this command, CI tests work on the main branch and on local
+                  # branches. However, they fail as a PR is created.
+                  git checkout -b ci-test-branch
+                  . build/common-config.sh
+                  make -C docker test

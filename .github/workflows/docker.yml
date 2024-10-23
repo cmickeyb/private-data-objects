@@ -4,10 +4,12 @@
 
 name: Build and Push PDO Docker Images
 
-on: push
+on: [workflow_dispatch]
 
 jobs:
+
   docker_build:
+
     name: Build PDO Images
     runs-on: ubuntu-22.04
 
