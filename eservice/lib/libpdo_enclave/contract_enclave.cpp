@@ -315,11 +315,35 @@ pdo_err_t ecall_InitializeContractState(
             request.state_encryption_key_,
             request.contract_id_hash_);
 
-        // IN PROGRESS: this is the one change
-        request.contract_code_.SaveToState(contract_state);
+        try
+        {
+            // IN PROGRESS: this is the one change
+            request.contract_code_.SaveToState(contract_state);
+        }
+        catch (...)
+        {
+            SAFE_LOG(PDO_LOG_ERROR, "Failed to save contract state during initialization");
+            throw;
+        }
 
-        std::shared_ptr<ContractResponse> response(request.process_request(contract_state));
-        last_result = response->SerializeAndEncrypt(session_key, enclaveData);
+        try
+        {
+            std::shared_ptr<ContractResponse> response(request.process_request(contract_state));
+            try
+            {
+                last_result = response->SerializeAndEncrypt(session_key, enclaveData);
+            }
+            catch (...)
+            {
+                SAFE_LOG(PDO_LOG_ERROR, "Failed to serialize and encrypt response");
+                throw;
+            }
+        }
+        catch (...)
+        {
+            SAFE_LOG(PDO_LOG_ERROR, "Failed process initialization request");
+            throw;
+        }
 
         // save the response and return the size of the buffer required for it
         (*outSerializedResponseSize) = last_result.size();

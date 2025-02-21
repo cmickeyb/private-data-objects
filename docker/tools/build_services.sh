@@ -25,8 +25,11 @@ check_pdo_build_env
 
 # -----------------------------------------------------------------
 yell Build and install services into ${PDO_INSTALL_ROOT}
+yell Memory configuration ${PDO_MEMORY_CONFIG}
 # -----------------------------------------------------------------
 try make -C ${PDO_SOURCE_ROOT}/build environment
 try make -C ${PDO_SOURCE_ROOT}/build system-keys
 try make -C ${PDO_SOURCE_ROOT}/build verified-build
 try make -C ${PDO_SOURCE_ROOT}/ledgers/ccf install-python
+
+echo ${PDO_MEMORY_CONFIG} > ${PDO_HOME}/etc/pdo_memory_config

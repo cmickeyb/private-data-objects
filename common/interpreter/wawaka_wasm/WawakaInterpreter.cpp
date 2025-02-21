@@ -158,6 +158,9 @@ void WawakaInterpreter::load_contract_code(
     */
     // HEAP_SIZE defined through gcc definitions
     wasm_module_inst = wasm_runtime_instantiate(wasm_module, 0, HEAP_SIZE, error_buf, sizeof(error_buf));
+    if (wasm_module_inst == NULL)
+        SAFE_LOG(PDO_LOG_CRITICAL,"instantiate failed with error <%s>", error_buf);
+
     pe::ThrowIfNull(wasm_module_inst, "failed to instantiate the module");
 
     /* this is where we set the module's stack size */
