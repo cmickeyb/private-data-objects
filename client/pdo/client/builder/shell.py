@@ -209,5 +209,5 @@ def run_shell_command(command_name, module_name) :
         command(state, bindings, args)
     except Exception as e :
         builder_command_base.display_error("Command failed: {}".format(str(e)))
-        logger.exception(e)
+        if builder_command_base.verbose: logger.exception(e)
         sys.exit(-1)
