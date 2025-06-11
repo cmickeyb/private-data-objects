@@ -22,8 +22,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import binascii
-import secp256k1
-
 
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
@@ -48,51 +46,6 @@ def read_transaction_keys_from_file(key_file, search_path, \
         raise Exception("Invalid Ledger Type. Must be 'ccf'")
 
     return txn_keys
-
-# -----------------------------------------------------------------
-# -----------------------------------------------------------------
-class TransactionKeys(object) :
-    """
-    Wrapper for managing Sawtooth transaction keys
-    """
-
-    @classmethod
-    def read_from_file(cls, file_name, search_path = ['.', './keys']) :
-        full_file = putils.find_file_in_path(file_name, search_path)
-        with open(full_file, "r") as ff :
-            hex_encoded_private_key = ff.read()
-
-        priv = binascii.unhexlify(hex_encoded_private_key)
-        return cls(secp256k1.PrivateKey(priv))
-
-    @classmethod
-    def from_hex(cls, hex_encoded_private_key) :
-        priv = binascii.unhexlify(hex_encoded_private_key)
-        return cls(secp256k1.PrivateKey(priv))
-
-    def __init__(self, private_key = None) :
-        if private_key == None :
-            private_key = secp256k1.PrivateKey()
-
-        self.public_key = private_key.pubkey
-        self.private_key = private_key
-
-    @property
-    def hashed_identity(self) :
-        key_byte_array = crypto.string_to_byte_array(self.txn_public)
-        hashed_txn_key = crypto.compute_message_hash(key_byte_array)
-        encoded_hashed_key = crypto.byte_array_to_hex(hashed_txn_key)
-        encoded_hashed_key = encoded_hashed_key.lower()
-        return encoded_hashed_key
-
-    @property
-    def txn_private(self) :
-        return self.private_key.serialize()
-
-    @property
-    def txn_public(self) :
-        return self.public_key.serialize().hex()
-
 
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
