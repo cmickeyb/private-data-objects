@@ -66,7 +66,7 @@ _epid_group = None
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
 def __find_enclave_library(config) :
-    enclave_file_name = 'libpdo-enclave.signed.so'
+    enclave_file_name = 'libpdo-eservice-enclave.signed.so'
     enclave_file_path = None
 
     if config :
@@ -78,17 +78,17 @@ def __find_enclave_library(config) :
         if os.path.exists(filep) :
             return filep
     else :
+        install_directory = os.environ.get('PDO_HOME', '/opt/pdo')
         script_directory = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+
         search_path = [
             script_directory,
-            os.path.abspath(os.path.join(script_directory, '..')),
-            os.path.abspath(os.path.join(script_directory, '..', 'lib')),
-            os.path.abspath(os.path.join(script_directory, '..', '..')),
-            os.path.abspath(os.path.join(script_directory, '..', '..', 'lib')),
-            os.path.abspath(os.path.join('/usr', 'lib'))
+            os.path.abspath(os.path.join(install_directory, 'lib')),
         ]
 
         return putils.find_file_in_path(enclave_file_name, search_path)
+
+    raise IOError("Could not find enclave shared object: {}".format(enclave_file_name))
 
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
@@ -149,7 +149,8 @@ def initialize_with_configuration(config) :
                 '{}'.format(
                     ', '.join(sorted(list(missing_keys)))))
 
-    NumberOfEnclaves = int(config.get('NumberOfEnclaves', 1))
+    # NumberOfEnclaves = int(config.get('NumberOfEnclaves', 1))
+    NumberOfEnclaves = 2
 
     try:
         spid = Path(os.path.join(config['sgx_key_root'], "sgx_spid.txt")).read_text().strip()
@@ -166,10 +167,16 @@ def initialize_with_configuration(config) :
 
     if not _pdo:
         signed_enclave = __find_enclave_library(config)
-        logger.debug("Attempting to load enclave at: %s", signed_enclave)
-        _pdo = enclave.pdo_enclave_info(signed_enclave, spid, NumberOfEnclaves)
-        logger.info("Basename: %s", get_enclave_basename())
-        logger.info("MRENCLAVE: %s", get_enclave_measurement())
+        logger.error("Attempting to load enclave at: %s", signed_enclave)
+        logger.error(f'SPID: {spid}, NumberOfEnclaves: {NumberOfEnclaves}')
+        try :
+            _pdo = enclave.pdo_enclave_info(signed_enclave, spid, NumberOfEnclaves)
+        except Exception as e:
+            logger.exception(e)
+            raise e
+
+        logger.error("Basename: %s", get_enclave_basename())
+        logger.error("MRENCLAVE: %s", get_enclave_measurement())
 
     sig_rl_updated = False
     while not sig_rl_updated:

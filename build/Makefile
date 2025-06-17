@@ -89,6 +89,7 @@ $(DSTDIR) :
 	@mkdir -p $(DSTDIR)/opt/pdo/etc/keys/sgx
 	@mkdir -p $(DSTDIR)/opt/pdo/etc/keys/ledger
 	@mkdir -p $(DSTDIR)/opt/pdo/keys
+	@mkdir -p $(DSTDIR)/opt/pdo/lib
 	@mkdir -p $(DSTDIR)/opt/pdo/logs
 
 verify-pre-build :
