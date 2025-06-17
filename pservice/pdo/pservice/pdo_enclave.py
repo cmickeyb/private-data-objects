@@ -138,11 +138,7 @@ def initialize_with_configuration(config) :
 
     missing_keys = valid_keys.difference(found_keys)
     if missing_keys:
-        raise \
-            ValueError(
-                'PDO enclave config file missing the following keys: '
-                '{}'.format(
-                    ', '.join(sorted(list(missing_keys)))))
+        raise ValueError('PDO enclave config file missing the following keys: {}'.format(', '.join(list(missing_keys))))
 
     try:
         spid = Path(os.path.join(config['sgx_key_root'], "sgx_spid.txt")).read_text().strip()
@@ -151,16 +147,18 @@ def initialize_with_configuration(config) :
         raise Exception("Unable to access SGX keys: {}".format(str(e)))
 
     if not _ias:
-        _ias = \
-            ias_client.IasClient(
-                IasServer = config['ias_url'],
-                SpidApiKey = spid_api_key,
-                Spid = spid)
+        _ias = ias_client.IasClient(IasServer = config['ias_url'], SpidApiKey = spid_api_key, Spid = spid)
 
     if not _pdo:
         signed_enclave = __find_enclave_library(config)
-        logger.debug("Attempting to load enclave at: %s", signed_enclave)
-        _pdo = enclave.pdo_enclave_info(signed_enclave, spid)
+        logger.info("Attempting to load enclave at: %s", signed_enclave)
+
+        try :
+            _pdo = enclave.pdo_enclave_info(signed_enclave, spid)
+        except Exception as e:
+            logger.exception(f'Failed to load enclave; {e}')
+            raise e
+
         logger.info("Basename: %s", get_enclave_basename())
         logger.info("MRENCLAVE: %s", get_enclave_measurement())
 
