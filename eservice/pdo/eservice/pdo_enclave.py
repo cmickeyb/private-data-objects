@@ -149,8 +149,9 @@ def initialize_with_configuration(config) :
                 '{}'.format(
                     ', '.join(sorted(list(missing_keys)))))
 
-    # NumberOfEnclaves = int(config.get('NumberOfEnclaves', 1))
-    NumberOfEnclaves = 2
+    NumberOfEnclaves = int(config.get('NumberOfEnclaves', 1))
+    if NumberOfEnclaves < 1 or NumberOfEnclaves > 16:
+        raise ValueError("NumberOfEnclaves must be between 1 and 16, found {}".format(NumberOfEnclaves))
 
     try:
         spid = Path(os.path.join(config['sgx_key_root'], "sgx_spid.txt")).read_text().strip()
@@ -159,24 +160,20 @@ def initialize_with_configuration(config) :
         raise Exception("Unable to access SGX keys: {}".format(str(e)))
 
     if not _ias:
-        _ias = \
-            ias_client.IasClient(
-                IasServer = config['ias_url'],
-                SpidApiKey = spid_api_key,
-                Spid = spid)
+        _ias = ias_client.IasClient(IasServer = config['ias_url'], SpidApiKey = spid_api_key, Spid = spid)
 
     if not _pdo:
         signed_enclave = __find_enclave_library(config)
-        logger.error("Attempting to load enclave at: %s", signed_enclave)
-        logger.error(f'SPID: {spid}, NumberOfEnclaves: {NumberOfEnclaves}')
+        logger.info("Attempting to load enclave at: %s", signed_enclave)
+
         try :
             _pdo = enclave.pdo_enclave_info(signed_enclave, spid, NumberOfEnclaves)
         except Exception as e:
             logger.exception(e)
             raise e
 
-        logger.error("Basename: %s", get_enclave_basename())
-        logger.error("MRENCLAVE: %s", get_enclave_measurement())
+        logger.info("Basename: %s", get_enclave_basename())
+        logger.info("MRENCLAVE: %s", get_enclave_measurement())
 
     sig_rl_updated = False
     while not sig_rl_updated:
