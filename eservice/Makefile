@@ -25,7 +25,7 @@ endif
 
 EGG_FILE=dist/pdo_eservice-${MOD_VERSION}-py${PY_VERSION}-linux-x86_64.egg
 
-ENCLAVE_LIB=deps/bin/libpdo-enclave.signed.so
+ENCLAVE_LIB=deps/bin/libpdo-eservice-enclave.signed.so
 
 SWIG_SOURCES = \
 	pdo_enclave_internal.i\

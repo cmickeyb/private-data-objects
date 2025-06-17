@@ -25,6 +25,7 @@ from requests.exceptions import HTTPError
 from pdo.pservice.utility import ias_client
 
 import pdo.common.crypto as crypto
+import pdo.common.utility as putils
 import pdo.pservice.enclave.pdo_enclave_internal as enclave
 
 import logging
@@ -59,30 +60,29 @@ _epid_group = None
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
 def __find_enclave_library(config) :
-    enclave_file_name = config.get('enclave_library', 'libpdo-enclave.signed.so')
-    enclave_file_path = config.get('enclave_library_path')
+    enclave_file_name = 'libpdo-pservice-enclave.signed.so'
+    enclave_file_path = None
+
+    if config :
+        enclave_file_name = config.get('enclave_library', enclave_file_name)
+        enclave_file_path = config.get('enclave_library_path', enclave_file_path)
 
     if enclave_file_path :
         enclave_file = os.path.join(enclave_file_path, enclave_file_name);
         if os.path.exists(enclave_file) :
             return enclave_file
     else :
+        install_directory = os.environ.get('PDO_HOME', '/opt/pdo')
         script_directory = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+
         search_path = [
             script_directory,
-            os.path.abspath(os.path.join(script_directory, '..')),
-            os.path.abspath(os.path.join(script_directory, '..', 'lib')),
-            os.path.abspath(os.path.join(script_directory, '..', '..')),
-            os.path.abspath(os.path.join(script_directory, '..', '..', 'lib')),
-            os.path.abspath(os.path.join('/usr', 'lib'))
+            os.path.abspath(os.path.join(install_directory, 'lib')),
         ]
 
-        for path in search_path :
-            enclave_file = os.path.join(path, enclave_file_name)
-            if os.path.exists(enclave_file) :
-                return enclave_file
+        return putils.find_file_in_path(enclave_file_name, search_path)
 
-    raise IOError("Could not find enclave shared object")
+    raise IOError("Could not find enclave shared object: {}".format(enclave_file_name))
 
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------

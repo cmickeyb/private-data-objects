@@ -33,6 +33,7 @@ install_root_dir = os.environ.get('PDO_HOME', '/opt/pdo')
 bin_dir = os.path.join(install_root_dir, "bin")
 dat_dir = os.path.join(install_root_dir, "data")
 etc_dir = os.path.join(install_root_dir, "etc")
+lib_dir = os.path.join(install_root_dir, "lib")
 log_dir = os.path.join(install_root_dir, "logs")
 key_dir = os.path.join(install_root_dir, "keys")
 
@@ -42,11 +43,11 @@ data_files = [
     (etc_dir, [ 'etc/sample_pservice.toml' ]),
     (log_dir, []),
     (key_dir, []),
-    ('lib', [ os.path.join(script_dir, 'deps/bin/libpdo-enclave.signed.so')])
+    (lib_dir, [ os.path.join(script_dir, 'deps/bin/libpdo-pservice-enclave.signed.so')])
 ]
 
 ext_deps = [
-    'deps/bin/libpdo-enclave.signed.so'
+    'deps/bin/libpdo-pservice-enclave.signed.so'
 ]
 
 ## -----------------------------------------------------------------
