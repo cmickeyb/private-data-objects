@@ -66,6 +66,11 @@ void operator delete(void *ptr, std::align_val_t) _NOEXCEPT
     std::abort();
 }
 
+void operator delete(void *ptr, unsigned long _v_) _NOEXCEPT
+{
+    free(ptr);
+}
+
 #include <stdio.h>
 FILE *const stderr = NULL;
 int vfprintf(FILE *__restrict, const char *__restrict, __isoc_va_list)

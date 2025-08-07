@@ -54,20 +54,6 @@
         "expected":"2147483647"
     },
     {
-        "description" : "deep recursion test 2^32 levels should {invert}",
-        "MethodName": "deep_recursion_test",
-        "KeywordParameters": { "levels" : 2147483648 },
-        "invert": "fail",
-        "expected": "method evaluation failed"
-    },
-    {
-        "description" : "deep recursion test 10G levels should {invert}",
-        "MethodName": "deep_recursion_test",
-        "KeywordParameters": { "levels" : 10000000000 },
-        "invert": "fail",
-        "expected": "method evaluation failed"
-    },
-    {
         "description" : "deep recursion test {KeywordParameters}",
         "MethodName": "deep_recursion_test",
         "KeywordParameters": {

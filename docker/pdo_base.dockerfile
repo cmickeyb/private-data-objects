@@ -70,7 +70,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # -----------------------------------------------------------------
 # Install WASI toolkit
 # -----------------------------------------------------------------
-ARG WASI_VERSION=24
+ARG WASI_VERSION=27
 ARG WASI_PACKAGE="wasi-sdk-${WASI_VERSION}.0-x86_64-linux.deb"
 
 WORKDIR /tmp
