@@ -99,16 +99,6 @@
 static JSON_Malloc_Function parson_malloc = malloc;
 static JSON_Free_Function parson_free = free;
 
-#ifndef COMPILE_FOR_SGX
-static int parson_escape_slashes = 1;
-#else
-static int parson_escape_slashes = 0;
-#endif
-
-static char *parson_float_format = NULL;
-
-static JSON_Number_Serialization_Function parson_number_serialization_function = NULL;
-
 #define IS_CONT(b) (((unsigned char)(b) & 0xC0) == 0x80) /* is utf-8 continuation byte */
 
 typedef int parson_bool_t;
@@ -157,17 +147,9 @@ struct json_array_t {
 };
 
 /* Various */
-#ifndef COMPILE_FOR_SGX
-static char * read_file(const char *filename);
-#endif
 static void   remove_comments(char *string, const char *start_token, const char *end_token);
 static char * parson_strndup(const char *string, size_t n);
 static char * parson_strdup(const char *string);
-#ifndef COMPILE_FOR_SGX
-static int    parson_sprintf(char * s, const char * format, ...);
-#else
-#define parson_snprintf(s, size, format, ...) snprintf(s, size, format, ##__VA_ARGS__)
-#endif
 
 static int    hex_char_to_int(char c);
 static JSON_Status parse_utf16_hex(const char *string, unsigned int *result);
@@ -213,44 +195,10 @@ static JSON_Value *  parse_null_value(const char **string);
 static JSON_Value *  parse_value(const char **string, size_t nesting);
 
 /* Serialization */
-static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int level, parson_bool_t is_pretty, char *num_buf);
+static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int level, parson_bool_t is_pretty);
 static int json_serialize_string(const char *string, size_t len, char *buf);
 
 /* Various */
-#ifndef COMPILE_FOR_SGX
-static char * read_file(const char * filename) {
-    FILE *fp = fopen(filename, "r");
-    size_t size_to_read = 0;
-    size_t size_read = 0;
-    long pos;
-    char *file_contents;
-    if (!fp) {
-        return NULL;
-    }
-    fseek(fp, 0L, SEEK_END);
-    pos = ftell(fp);
-    if (pos < 0) {
-        fclose(fp);
-        return NULL;
-    }
-    size_to_read = pos;
-    rewind(fp);
-    file_contents = (char*)parson_malloc(sizeof(char) * (size_to_read + 1));
-    if (!file_contents) {
-        fclose(fp);
-        return NULL;
-    }
-    size_read = fread(file_contents, 1, size_to_read, fp);
-    if (size_read == 0 || ferror(fp)) {
-        fclose(fp);
-        parson_free(file_contents);
-        return NULL;
-    }
-    fclose(fp);
-    file_contents[size_read] = '\0';
-    return file_contents;
-}
-#endif
 
 static void remove_comments(char *string, const char *start_token, const char *end_token) {
     parson_bool_t in_string = PARSON_FALSE, escaped = PARSON_FALSE;
@@ -301,26 +249,6 @@ static char * parson_strndup(const char *string, size_t n) {
 static char * parson_strdup(const char *string) {
     return parson_strndup(string, strlen(string));
 }
-
-#ifndef COMPILE_FOR_SGX
-static int parson_sprintf(char * s, const char * format, ...) {
-    int result;
-    va_list args;
-    va_start(args, format);
-
-    #if defined(__APPLE__) && defined(__clang__)
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    #endif
-        result = vsprintf(s, format, args);
-    #if defined(__APPLE__) && defined(__clang__)
-        #pragma clang diagnostic pop
-    #endif
-
-    va_end(args);
-    return result;
-}
-#endif
 
 static int hex_char_to_int(char c) {
     if (c >= '0' && c <= '9') {
@@ -1160,8 +1088,9 @@ static JSON_Value * parse_null_value(const char **string) {
                                 }\
                             } while (0)
 
-static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int level, parson_bool_t is_pretty, char *num_buf)
+static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int level, parson_bool_t is_pretty)
 {
+    char num_buf[PARSON_NUM_BUF_SIZE] = {0};
     const char *key = NULL, *string = NULL;
     JSON_Value *temp_value = NULL;
     JSON_Array *array = NULL;
@@ -1184,7 +1113,7 @@ static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int le
                     APPEND_INDENT(level+1);
                 }
                 temp_value = json_array_get_value(array, i);
-                written = json_serialize_to_buffer_r(temp_value, buf, level+1, is_pretty, num_buf);
+                written = json_serialize_to_buffer_r(temp_value, buf, level+1, is_pretty);
                 if (written < 0) {
                     return -1;
                 }
@@ -1233,7 +1162,7 @@ static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int le
                     APPEND_STRING(" ");
                 }
                 temp_value = json_object_get_value_at(object, i);
-                written = json_serialize_to_buffer_r(temp_value, buf, level+1, is_pretty, num_buf);
+                written = json_serialize_to_buffer_r(temp_value, buf, level+1, is_pretty);
                 if (written < 0) {
                     return -1;
                 }
@@ -1277,24 +1206,14 @@ static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int le
             return written_total;
         case JSONNumber:
             num = json_value_get_number(value);
-            if (buf != NULL) {
-                num_buf = buf;
-            }
-            if (parson_number_serialization_function) {
-                written = parson_number_serialization_function(num, num_buf);
-            } else {
-                const char *float_format = parson_float_format ? parson_float_format : PARSON_DEFAULT_FLOAT_FORMAT;
-#ifndef COMPILE_FOR_SGX
-                written = parson_sprintf(num_buf, float_format, num);
-#else
-                written = parson_snprintf(num_buf, PARSON_NUM_BUF_SIZE, float_format, num);
-#endif
-            }
-            if (written < 0) {
+            written = snprintf(num_buf, sizeof(num_buf), PARSON_DEFAULT_FLOAT_FORMAT, num);
+            if (written <= 0) {
                 return -1;
             }
             if (buf != NULL) {
-                buf += written;
+                // no need to update buf pointer since we are just returning the value
+                memcpy(buf, num_buf, written);
+                buf[written] = '\0';
             }
             written_total += written;
             return written_total;
@@ -1356,11 +1275,7 @@ static int json_serialize_string(const char *string, size_t len, char *buf) {
             case '\x1e': APPEND_STRING("\\u001e"); break;
             case '\x1f': APPEND_STRING("\\u001f"); break;
             case '/':
-                if (parson_escape_slashes) {
-                    APPEND_STRING("\\/");  /* to make json embeddable in xml\/html */
-                } else {
-                    APPEND_STRING("/");
-                }
+                APPEND_STRING("/");
                 break;
             default:
                 if (buf != NULL) {
@@ -1379,31 +1294,6 @@ static int json_serialize_string(const char *string, size_t len, char *buf) {
 #undef APPEND_INDENT
 
 /* Parser API */
-#ifndef COMPILE_FOR_SGX
-JSON_Value * json_parse_file(const char *filename) {
-    char *file_contents = read_file(filename);
-    JSON_Value *output_value = NULL;
-    if (file_contents == NULL) {
-        return NULL;
-    }
-    output_value = json_parse_string(file_contents);
-    parson_free(file_contents);
-    return output_value;
-}
-#endif
-
-#ifndef COMPILE_FOR_SGX
-JSON_Value * json_parse_file_with_comments(const char *filename) {
-    char *file_contents = read_file(filename);
-    JSON_Value *output_value = NULL;
-    if (file_contents == NULL) {
-        return NULL;
-    }
-    output_value = json_parse_string_with_comments(file_contents);
-    parson_free(file_contents);
-    return output_value;
-}
-#endif
 
 JSON_Value * json_parse_string(const char *string) {
     if (string == NULL) {
@@ -1822,8 +1712,7 @@ JSON_Value * json_value_deep_copy(const JSON_Value *value) {
 }
 
 size_t json_serialization_size(const JSON_Value *value) {
-    char num_buf[PARSON_NUM_BUF_SIZE]; /* recursively allocating buffer on stack is a bad idea, so let's do it only once */
-    int res = json_serialize_to_buffer_r(value, NULL, 0, PARSON_FALSE, num_buf);
+    int res = json_serialize_to_buffer_r(value, NULL, 0, PARSON_FALSE);
     return res < 0 ? 0 : (size_t)(res) + 1;
 }
 
@@ -1833,36 +1722,13 @@ JSON_Status json_serialize_to_buffer(const JSON_Value *value, char *buf, size_t 
     if (needed_size_in_bytes == 0 || buf_size_in_bytes < needed_size_in_bytes) {
         return JSONFailure;
     }
-    written = json_serialize_to_buffer_r(value, buf, 0, PARSON_FALSE, NULL);
+    written = json_serialize_to_buffer_r(value, buf, 0, PARSON_FALSE);
     if (written < 0) {
         return JSONFailure;
     }
     return JSONSuccess;
 }
 
-#ifndef COMPILE_FOR_SGX
-JSON_Status json_serialize_to_file(const JSON_Value *value, const char *filename) {
-    JSON_Status return_code = JSONSuccess;
-    FILE *fp = NULL;
-    char *serialized_string = json_serialize_to_string(value);
-    if (serialized_string == NULL) {
-        return JSONFailure;
-    }
-    fp = fopen(filename, "w");
-    if (fp == NULL) {
-        json_free_serialized_string(serialized_string);
-        return JSONFailure;
-    }
-    if (fputs(serialized_string, fp) == EOF) {
-        return_code = JSONFailure;
-    }
-    if (fclose(fp) == EOF) {
-        return_code = JSONFailure;
-    }
-    json_free_serialized_string(serialized_string);
-    return return_code;
-}
-#endif
 
 char * json_serialize_to_string(const JSON_Value *value) {
     JSON_Status serialization_result = JSONFailure;
@@ -1884,8 +1750,7 @@ char * json_serialize_to_string(const JSON_Value *value) {
 }
 
 size_t json_serialization_size_pretty(const JSON_Value *value) {
-    char num_buf[PARSON_NUM_BUF_SIZE]; /* recursively allocating buffer on stack is a bad idea, so let's do it only once */
-    int res = json_serialize_to_buffer_r(value, NULL, 0, PARSON_TRUE, num_buf);
+    int res = json_serialize_to_buffer_r(value, NULL, 0, PARSON_TRUE);
     return res < 0 ? 0 : (size_t)(res) + 1;
 }
 
@@ -1895,36 +1760,12 @@ JSON_Status json_serialize_to_buffer_pretty(const JSON_Value *value, char *buf, 
     if (needed_size_in_bytes == 0 || buf_size_in_bytes < needed_size_in_bytes) {
         return JSONFailure;
     }
-    written = json_serialize_to_buffer_r(value, buf, 0, PARSON_TRUE, NULL);
+    written = json_serialize_to_buffer_r(value, buf, 0, PARSON_TRUE);
     if (written < 0) {
         return JSONFailure;
     }
     return JSONSuccess;
 }
-
-#ifndef COMPILE_FOR_SGX
-JSON_Status json_serialize_to_file_pretty(const JSON_Value *value, const char *filename) {
-    JSON_Status return_code = JSONSuccess;
-    FILE *fp = NULL;
-    char *serialized_string = json_serialize_to_string_pretty(value);
-    if (serialized_string == NULL) {
-        return JSONFailure;
-    }
-    fp = fopen(filename, "w");
-    if (fp == NULL) {
-        json_free_serialized_string(serialized_string);
-        return JSONFailure;
-    }
-    if (fputs(serialized_string, fp) == EOF) {
-        return_code = JSONFailure;
-    }
-    if (fclose(fp) == EOF) {
-        return_code = JSONFailure;
-    }
-    json_free_serialized_string(serialized_string);
-    return return_code;
-}
-#endif
 
 char * json_serialize_to_string_pretty(const JSON_Value *value) {
     JSON_Status serialization_result = JSONFailure;
@@ -2492,24 +2333,4 @@ int json_boolean(const JSON_Value *value) {
 void json_set_allocation_functions(JSON_Malloc_Function malloc_fun, JSON_Free_Function free_fun) {
     parson_malloc = malloc_fun;
     parson_free = free_fun;
-}
-
-void json_set_escape_slashes(int escape_slashes) {
-    parson_escape_slashes = escape_slashes;
-}
-
-void json_set_float_serialization_format(const char *format) {
-    if (parson_float_format) {
-        parson_free(parson_float_format);
-        parson_float_format = NULL;
-    }
-    if (!format) {
-        parson_float_format = NULL;
-        return;
-    }
-    parson_float_format = parson_strdup(format);
-}
-
-void json_set_number_serialization_function(JSON_Number_Serialization_Function func) {
-    parson_number_serialization_function = func;
 }
