@@ -37,6 +37,45 @@
 #include "interpreter_kv.h"
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// This class is used to ensure that the state is always finalized
+// after processing a request. Storage reclamation in state appears to
+// only happen when state is finalized. If there are too many exceptions
+// processed without invoking state we could end up with a significant
+// memory leak.
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+class StateFinalizer
+{
+private:
+    ContractState& contract_state_;
+    bool finalized_ = false;
+
+public:
+    StateFinalizer(ContractState& contract_state) : contract_state_(contract_state) {};
+
+    bool Finalize(void)
+    {
+        if (!finalized_)
+        {
+            try {
+                contract_state_.Finalize();
+            }
+            catch (std::exception& e) {
+                SAFE_LOG(PDO_LOG_ERROR, "Failed to finalize state: %s", e.what());
+                finalized_ = true;
+                return false;
+            }
+            finalized_ = true;
+        }
+        return true;
+    };
+
+    ~StateFinalizer()
+    {
+        Finalize();
+    };
+};
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // See ${PDO_SOURCE_ROOT}/eservice/docs/contract.json for format
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
@@ -110,6 +149,8 @@ std::shared_ptr<ContractResponse> UpdateStateRequest::process_request(ContractSt
 
         bool state_changed_flag;
 
+        StateFinalizer state_finalizer(contract_state);
+
         // Push this into a block to ensure that the interpreter is deallocated
         // and frees its memory before finalizing the state update
         {
@@ -129,7 +170,8 @@ std::shared_ptr<ContractResponse> UpdateStateRequest::process_request(ContractSt
                 result);
         }
 
-        contract_state.Finalize();
+        if (! state_finalizer.Finalize())
+            return std::make_shared<ContractResponse>(*this, false, "failed to finalize state");
 
         // check for operations that did not modify state
         if (state_changed_flag)
@@ -154,8 +196,6 @@ std::shared_ptr<ContractResponse> UpdateStateRequest::process_request(ContractSt
                  contract_code_.name_.c_str(),
                  contract_message_.expression_.c_str(),
                  e.what());
-
-        contract_state.Finalize();
 
         return std::make_shared<ContractResponse>(*this, false, e.what());
     }
@@ -239,6 +279,8 @@ std::shared_ptr<ContractResponse> InitializeStateRequest::process_request(Contra
         msg.OriginatorID = contract_message_.originator_verifying_key_;
         msg.MessageHash = ByteArrayToBase64EncodedString(contract_message_.message_hash_);
 
+        StateFinalizer state_finalizer(contract_state);
+
         // Push this into a block to ensure that the interpreter is deallocated
         // and frees its memory before finalizing the state update
         {
@@ -252,7 +294,8 @@ std::shared_ptr<ContractResponse> InitializeStateRequest::process_request(Contra
                 contract_id_, creator_id_, code, msg, contract_state.state_);
         }
 
-        contract_state.Finalize();
+        if (! state_finalizer.Finalize())
+            return std::make_shared<ContractResponse>(*this, false, "failed to finalize state");
 
         return std::make_shared<InitializeStateResponse>(
             *this,
