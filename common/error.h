@@ -17,6 +17,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <stdarg.h>
 
 #include "pdo_error.h"
 #if _CLIENT_ONLY_
@@ -24,6 +25,7 @@
 #include "sgx_error.h"
 #endif
 
+#define ERROR_MESSAGE_SIZE 1024
 namespace pdo {
     namespace error {
 
@@ -179,11 +181,21 @@ namespace pdo {
         template<typename PointerType>
         inline void ThrowIfNull(
             const PointerType ptr,
-            const char* msg = nullptr
+            const char* msg = nullptr,
+            ...
             )
         {
-            if (!ptr) {
-                throw ValueError(msg ? msg : "Unexpected null parameter.");
+            va_list args;
+            va_start(args, msg);
+
+            if (ptr == nullptr) {
+                if (msg == nullptr)
+                    throw ValueError("Unexpected null parameter.");
+
+                char buffer[ERROR_MESSAGE_SIZE] = {0};
+                vsnprintf(buffer, ERROR_MESSAGE_SIZE, msg, args);
+                va_end(args);
+                throw ValueError(buffer);
             }
         } // ThrowIfNull
 
@@ -191,11 +203,21 @@ namespace pdo {
         template <typename except>
         inline void ThrowIf(
             bool condition,
-            const char* msg
+            const char* msg,
+            ...
             )
         {
+            va_list args;
+            va_start(args, msg);
+
             if (condition) {
-                throw except(msg);
+                if (msg == nullptr)
+                    throw except("Unexpected null parameter.");
+
+                char buffer[ERROR_MESSAGE_SIZE] = {0};
+                vsnprintf(buffer, ERROR_MESSAGE_SIZE, msg, args);
+                va_end(args);
+                throw except(buffer);
             }
         } // ThrowIf
 
