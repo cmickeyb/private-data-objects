@@ -15,8 +15,9 @@
 
 #pragma once
 
-#include <string>
+#include <array>
 #include <map>
+#include <string>
 
 #include "basic_kv.h"
 #include "ContractInterpreter.h"
@@ -34,15 +35,21 @@ namespace pc = pdo::contracts;
 class WawakaInterpreter : public pc::ContractInterpreter
 {
 private:
-    std::string error_msg_;
+    bool initialized_ = false;  // true if the interpreter has been initialized
 
-    // RUNTIME_MEM_POOL_SIZE defined through gcc definitions
-    char global_mem_pool_buf[RUNTIME_MEM_POOL_SIZE] = { 0 };
-    wasm_module_t wasm_module = NULL;
-    wasm_module_inst_t wasm_module_inst = NULL;
-    wasm_exec_env_t wasm_exec_env = NULL;
-    ByteArray binary_code_;
-    pdo::state::Basic_KV_Plus* kv_store_pool[KV_STORE_POOL_MAX_SIZE] = { 0 };
+    std::string error_msg_;     // error message from the last operation
+    ByteArray binary_code_;     // binary code of the contract to be executed
+
+    // CONTRACT_GLOBAL_HEAP defined through gcc definitions
+    ByteArray global_mem_pool_buf_;
+
+    // KV_STORE_POOL_MAX_SIZE defined through gcc definitions
+    std::array<pdo::state::Basic_KV_Plus*, KV_STORE_POOL_MAX_SIZE>  kv_store_pool_ = { 0 };
+
+    // WAMR state variables
+    wasm_module_t wasm_module_ = NULL;
+    wasm_module_inst_t wasm_module_inst_ = NULL;
+    wasm_exec_env_t wasm_exec_env_ = NULL;
 
     void parse_response_string(
         int32 response_app,

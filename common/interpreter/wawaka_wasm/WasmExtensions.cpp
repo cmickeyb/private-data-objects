@@ -38,36 +38,6 @@
 namespace pe = pdo::error;
 
 /* ----------------------------------------------------------------- *
- * NAME: memchr
- * ----------------------------------------------------------------- */
-extern "C" int32 memchr_wrapper(
-    wasm_exec_env_t exec_env,
-    int32 src_offset,
-    int32 ch,
-    uint32 src_size)
-{
-    wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
-    try {
-        if (src_size == 0)
-            return 0;
-
-        void *src = get_buffer(module_inst, src_offset, src_size);
-        if (src == NULL)
-            return 0;
-
-        void *ptr = memchr(src, ch, src_size);
-        if (ptr == NULL)
-            return 0;
-
-        return wasm_runtime_addr_native_to_app(module_inst, ptr);
-    }
-    catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
-        return false;
-    }
-}
-
-/* ----------------------------------------------------------------- *
  * NAME: _contract_log_wrapper
  * ----------------------------------------------------------------- */
 extern "C" bool contract_log_wrapper(
@@ -84,6 +54,17 @@ extern "C" bool contract_log_wrapper(
         SAFE_LOG(PDO_LOG_ERROR, "unexpected failure in %s", __FUNCTION__);
         return false;
     }
+}
+
+/* ----------------------------------------------------------------- *
+ * NAME: _contract_abort_wrapper
+ * ----------------------------------------------------------------- */
+extern "C" void contract_abort_wrapper(
+    wasm_exec_env_t exec_env,
+    const char* buffer)
+{
+    wasm_module_inst_t module_inst = get_module_inst(exec_env);
+    wasm_runtime_set_exception(module_inst, buffer);
 }
 
 /* ----------------------------------------------------------------- *
@@ -137,7 +118,8 @@ extern "C" double strtod_wrapper(
 
 extern "C" void abort_wrapper(wasm_exec_env_t exec_env)
 {
-    abort();
+    wasm_module_inst_t module_inst = get_module_inst(exec_env);
+    wasm_runtime_set_exception(module_inst, "env.abort()");
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -154,10 +136,6 @@ WASM_PASSTHRU_FUNCTION(islower)
 WASM_PASSTHRU_FUNCTION(ispunct)
 WASM_PASSTHRU_FUNCTION(isblank)
 
-#if 0
-WASM_PASSTHRU_FUNCTION(isascii)
-#endif
-
 static NativeSymbol native_symbols[] =
 {
     /* Missing libc functions */
@@ -165,9 +143,6 @@ static NativeSymbol native_symbols[] =
     EXPORT_WASM_API_WITH_SIG2(islower,"(i)i"),
     EXPORT_WASM_API_WITH_SIG2(ispunct,"(i)i"),
     EXPORT_WASM_API_WITH_SIG2(isblank,"(i)i"),
-#if 0
-    EXPORT_WASM_API_WITH_SIG2(isascii,"(i)i"),
-#endif
     EXPORT_WASM_API_WITH_SIG2(abort,"()"),
 
     /* Crypto operations from WasmCryptoExtensions.h */
@@ -204,11 +179,10 @@ static NativeSymbol native_symbols[] =
     EXPORT_WASM_API_WITH_SIG2(key_value_open,"(*~*~)i"),
     EXPORT_WASM_API_WITH_SIG2(key_value_finalize,"(iii)i"),
 
-
     /* Utility functions */
     EXPORT_WASM_API_WITH_SIG2(contract_log, "(i$)i"),
+    EXPORT_WASM_API_WITH_SIG2(contract_abort, "($)"),
     EXPORT_WASM_API_WITH_SIG2(simple_hash, "(*~)i"),
-    EXPORT_WASM_API_WITH_SIG2(memchr, "(iii)i"),
     EXPORT_WASM_API_WITH_SIG2(strtod, "($*)F"),
 };
 
@@ -216,20 +190,13 @@ static NativeSymbol native_symbols[] =
 }
 #endif
 
-bool RegisterNativeFunctions(void)
+bool InitializeNativeSymbols(RuntimeInitArgs& init_args)
 {
-    try {
-        size_t native_symbols_count = sizeof(native_symbols)/sizeof(NativeSymbol);
-        if (! wasm_runtime_register_natives("env", native_symbols, native_symbols_count))
-        {
-            SAFE_LOG(PDO_LOG_ERROR, "failed to register native functions");
-            return false;
-        }
-    }
-    catch (...) {
-        SAFE_LOG(PDO_LOG_ERROR, "exception throw while registering native functions");
-        return false;
-    }
+    size_t native_symbols_count = sizeof(native_symbols)/sizeof(NativeSymbol);
+
+    init_args.native_module_name = "env";
+    init_args.n_native_symbols = native_symbols_count;
+    init_args.native_symbols = native_symbols;
 
     return true;
 }

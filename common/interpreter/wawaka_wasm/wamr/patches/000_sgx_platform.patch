@@ -1,0 +1,24 @@
+diff --git a/core/shared/platform/linux-sgx/sgx_platform.c b/core/shared/platform/linux-sgx/sgx_platform.c
+index db350bc8..b72885d6 100644
+--- a/core/shared/platform/linux-sgx/sgx_platform.c
++++ b/core/shared/platform/linux-sgx/sgx_platform.c
+@@ -183,8 +183,16 @@ void
+ os_munmap(void *addr, size_t size)
+ {
+     uint64 aligned_size, page_size;
++    sgx_status_t st = 0;
+
+     page_size = getpagesize();
+     aligned_size = (size + page_size - 1) & ~(page_size - 1);
+-    sgx_free_rsrv_mem(addr, aligned_size);
++
++    /* de-initialize the allocated memory */
++    memset(addr, 0, aligned_size);
++
++    st = sgx_free_rsrv_mem(addr, aligned_size);
++    if (st != SGX_SUCCESS)
++        os_printf("os_munmap(addr=0x%" PRIx64 ", size=%u) failed.\n",
++                  (uintptr_t)addr, size);
+ }
+
+ int

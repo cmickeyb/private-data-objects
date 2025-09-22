@@ -232,11 +232,21 @@ bool contract_log(
     const uint32_t loglevel,
     const char *buffer);
 
+void contract_abort(
+    const char* buffer);
+
 int simple_hash(uint8_t *buffer, const size_t buflen);
 
 #ifdef __cplusplus
 }
 #endif
+
+#define CONTRACT_SAFE_ABORT(FMT, ...)           \
+    {                                           \
+        char buf[512];                          \
+        snprintf(buf, 512, FMT, ##__VA_ARGS__); \
+        contract_abort(buf);                    \
+    }
 
 #define CONTRACT_SAFE_LOG(LEVEL, FMT, ...) \
     {                                      \

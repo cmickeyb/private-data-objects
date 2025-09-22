@@ -53,6 +53,21 @@ LIST(APPEND WASM_BUILD_OPTIONS "-DUSE_WASI_SDK=1")
 SET(WASM_LINK_OPTIONS)
 LIST(APPEND WASM_LINK_OPTIONS "-Wl,--export=ww_dispatch")
 LIST(APPEND WASM_LINK_OPTIONS "-Wl,--export=ww_initialize")
+LIST(APPEND WASM_LINK_OPTIONS "-Wl,--export=malloc")
+LIST(APPEND WASM_LINK_OPTIONS "-Wl,--export=free")
+LIST(APPEND WASM_LINK_OPTIONS "-Wl,--export=__data_end")
+LIST(APPEND WASM_LINK_OPTIONS "-Wl,--export=__heap_base")
+
+# Uncomment the following to set stack and memory sizes, these
+# are strictly speaking not needed as the runtime will manage
+# maximum sizes. However, they can be useful to trap unbounded
+# memory usage at compile time rather than at runtime.
+
+# MATH(EXPR STACK "256*1024")
+# MATH(EXPR TOTAL "512*1024")
+# LIST(APPEND WASM_LINK_OPTIONS "-z stack-size=${STACK}")
+# LIST(APPEND WASM_LINK_OPTIONS "-Wl,--max-memory=${TOTAL}")
+# LIST(APPEND WASM_LINK_OPTIONS "-Wl,--initial-memory=${TOTAL}")
 
 # To identify undefined symbols, remove the allow-undefined
 # switch and add the error-limit swith

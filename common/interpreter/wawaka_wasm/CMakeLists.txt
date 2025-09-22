@@ -22,132 +22,89 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR)
 IF (NOT DEFINED ENV{WASM_SRC})
   MESSAGE(FATAL_ERROR "WASM_SRC environment variable not defined!")
 ENDIF()
-SET(WASM_SRC "$ENV{WASM_SRC}")
+SET (WAMR_ROOT_DIR "$ENV{WASM_SRC}")
 
 # Make sure wasm-micro-runtime submodule has been cloned
-FILE(GLOB WAMR_SUBMOD ${WASM_SRC})
+FILE(GLOB WAMR_SUBMOD ${WAMR_ROOT_DIR})
 LIST(LENGTH WAMR_SUBMOD SUBMOD_CONTENTS)
 IF (SUBMOD_CONTENTS EQUAL 0)
   MESSAGE(FATAL_ERROR "WAMR git submodule has not been cloned. Please run `git submodule update --init` first.")
 ENDIF()
 
-# Reset default linker flags
-SET (CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-SET (CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
-
-# Set WAMR_BUILD_TARGET
-IF (NOT DEFINED WAMR_BUILD_TARGET)
-  IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    # Build as X86_64 by default in 64-bit platform
-    SET (WAMR_BUILD_TARGET "X86_64")
-  ELSE ()
-    # Build as X86_32 by default in 32-bit platform
-    SET (WAMR_BUILD_TARGET "X86_32")
-  ENDIF ()
-ENDIF ()
-
-IF (NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release)
+# Memory size should be set in Memory.cmake which must be included
+# before this file. There are three values for memory size: SMALL, MEDIUM
+# and LARGE. Each provides defaults for memory allocation. See the note
+# about memory size in Memory.cmake regarding dependencies between
+# memory settings here and in other parts of PDO.
+IF (NOT DEFINED PDO_MEMORY_CONFIG)
+  MESSAGE(FATAL_ERROR "PDO_MEMORY_CONFIG not defined")
 ENDIF()
 
-# Disable AoT by default
+#################################################################
+# WAMR Library
+#
+# The WAMR library is built using a slightly modified version
+# of the build script found in product-mini/platforms/linux-sgx/
+#################################################################
+
+# Set up the WAMR build configuration for use with Wawaka
 SET (WAMR_BUILD_AOT 0)
+SET (WAMR_BUILD_JIT 0)
 SET (WAMR_BUILD_INTERP 1)
+
+# Set the interpreter type
 IF (PDO_INTERPRETER STREQUAL "wawaka-opt")
   SET (WAMR_BUILD_FAST_INTERP 1)
   ADD_DEFINITIONS (-DUSE_WAWAKA_OPT=1)
   MESSAGE(STATUS "Building wawaka in optimized INTERP mode")
 ELSE()
-  # Disable optimized interpreter by default
   SET (WAMR_BUILD_FAST_INTERP 0)
-  MESSAGE(STATUS "Building wawaka in INTERP mode")
+  ADD_DEFINITIONS (-DUSE_WAWAKA_OPT=0)
+  MESSAGE(STATUS "Building wawaka in regular INTERP mode")
 ENDIF()
 
-# Disable JIT by default for all runtime modes.
-SET (WAMR_BUILD_JIT 0)
+# Build LIBC support but we do not want any of the
+# WASI system calls or pthread support
+SET (WAMR_BUILD_LIBC_BUILTIN 1)
+SET (WAMR_BUILD_LIBC_WASI 0)
+SET (WAMR_BUILD_LIB_PTHREAD 0)
 
-IF (NOT DEFINED WAMR_BUILD_LIBC_BUILTIN)
-  # Enable libc builtin support by default
-  SET (WAMR_BUILD_LIBC_BUILTIN 1)
-ENDIF ()
+# No need for multi-module support
+SET (WAMR_BUILD_MULTI_MODULE 0)
 
-IF (NOT DEFINED WAMR_BUILD_LIBC_WASI)
-  # Disable libc wasi support by default
-  SET (WAMR_BUILD_LIBC_WASI 0)
-ENDIF ()
+# WASI/clang compiles references so we need
+# to ensure WAMR supports them
+SET (WAMR_BUILD_REF_TYPES 1)
 
-################################################################################
+# We do not want heap sharing support between modules
+SET (WASM_ENABLE_SHARED_HEAP 0)
+
+# --------------- Other flags that are not required ---------------
+
+# In theory this should remove the mmap calls, in practice it doesn't
+# appear to work that way.
+# SET(WAMR_DISABLE_STACK_HW_BOUND_CHECK 1)
+# SET(WAMR_DISABLE_HW_BOUND_CHECK 1)
+
+# This is used to distinguish between pre-allocated buffers and WAMR
+# managed dynamic allocators in the application. It is not needed.
+# SET (WASM_ENABLE_GLOBAL_HEAP_POOL 0)
 
 SET(IWASM_STATIC_NAME iwasm)
-SET(WAWAKA_STATIC_NAME wwasm)
-PROJECT(wawaka_wasm C CXX)
-
-SET (WAMR_BUILD_PLATFORM "linux-sgx")
-
-SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
-SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -ffunction-sections -fdata-sections \
-                                     -Wall -Wno-unused-parameter -Wno-pedantic \
-                                     -nostdinc -fvisibility=hidden -fpie" )
-
-SET (WAMR_ROOT_DIR ${WASM_SRC})
-SET (SHARED_DIR ${WAMR_ROOT_DIR}/core/shared)
-SET (IWASM_DIR ${WAMR_ROOT_DIR}/core/iwasm)
-SET (APP_FRAMEWORK_DIR ${WAMR_ROOT_DIR}/core/app-framework)
-
-ENABLE_LANGUAGE (ASM)
-
-#################################################################
-# WAMR Library
-#################################################################
-# include the build config template file
-INCLUDE (${WAMR_ROOT_DIR}/build-scripts/config_common.cmake)
-
-INCLUDE (${SHARED_DIR}/platform/${WAMR_BUILD_PLATFORM}/shared_platform.cmake)
-INCLUDE (${SHARED_DIR}/mem-alloc/mem_alloc.cmake)
-INCLUDE (${SHARED_DIR}/utils/shared_utils.cmake)
-
-# this picks up the libc_erro.h, this appears to be an error in WAMR in that the
-# test for WASI is AFTER the attempt to include a file that is only available when
-# WASI is turned on.
-INCLUDE (${SHARED_DIR}/platform/common/libc-util/platform_common_libc_util.cmake)
-
-IF (WAMR_BUILD_LIBC_BUILTIN EQUAL 1)
-  INCLUDE (${IWASM_DIR}/libraries/libc-builtin/libc_builtin.cmake)
-ENDIF ()
-IF (WAMR_BUILD_LIBC_WASI EQUAL 1)
-  INCLUDE (${IWASM_DIR}/libraries/libc-wasi/libc_wasi.cmake)
-ENDIF ()
-
-INCLUDE (${IWASM_DIR}/common/iwasm_common.cmake)
-
-IF (WAMR_BUILD_INTERP EQUAL 1 OR WAMR_BUILD_JIT EQUAL 1)
-  INCLUDE (${IWASM_DIR}/interpreter/iwasm_interp.cmake)
-ENDIF ()
-
-ADD_LIBRARY (${IWASM_STATIC_NAME}
-             ${PLATFORM_SHARED_SOURCE}
-             ${PLATFORM_COMMON_LIBC_UTIL_SOURCE}
-             ${MEM_ALLOC_SHARED_SOURCE}
-             ${UTILS_SHARED_SOURCE}
-             ${LIBC_BUILTIN_SOURCE}
-             ${LIBC_WASI_SOURCE}
-             ${WAMR_POSIX_SOURCES}
-             ${IWASM_COMMON_SOURCE}
-             ${IWASM_INTERP_SOURCE}
-             ${IWASM_COMPL_SOURCE}
-             # this is necessary because WAMR currently does not have a definition
-             # for os_is_handle_valid in the sgx_platform.c file
-             ${CMAKE_CURRENT_SOURCE_DIR}/wamr_fixes.c
-           )
-
-TARGET_INCLUDE_DIRECTORIES(${IWASM_STATIC_NAME} PUBLIC ${SHARED_DIR}/include)
-TARGET_INCLUDE_DIRECTORIES(${IWASM_STATIC_NAME} PUBLIC ${IWASM_DIR}/include)
+INCLUDE (${CMAKE_CURRENT_SOURCE_DIR}/wamr/wamr.cmake)
 
 #################################################################
 # Wawaka Interpreter
 #################################################################
+PROJECT(wawaka_wasm C CXX)
+
+SET(WAWAKA_STATIC_NAME wwasm)
+
+SET (SHARED_DIR ${WAMR_ROOT_DIR}/core/shared)
+SET (IWASM_DIR ${WAMR_ROOT_DIR}/core/iwasm)
+
 FILE(GLOB WWASM_PROJECT_HEADERS *.h)
-FILE(GLOB WWASM_PROJECT_SOURCES *.cpp)
+FILE(GLOB WWASM_PROJECT_SOURCES *.cpp wamr/*.c)
 
 ADD_LIBRARY(${WAWAKA_STATIC_NAME}
              ${WWASM_PROJECT_HEADERS}
@@ -158,32 +115,22 @@ SGX_PREPARE_TRUSTED(${WAWAKA_STATIC_NAME})
 # RUNTIME_MEM_POOL_SIZE: The WASM runtime's global memory pool size
 # HEAP_SIZE: Size of the runtime's heap for dynamic allocations by a WASM module.
 # STACK_SIZE: Size of the runtime's stack for executing a WASM module
-# Layout: RUNTIME_MEM_POOL_SIZE > HEAP_SIZE + STACK_SIZE + padding
-# The numbers below were chosen to set RUNTIME_MEM_POOL_SIZE to be about
-# 1/8 of the size of the enclave heap size defined in the SGX.cmake file.
-IF (NOT DEFINED PDO_MEMORY_CONFIG)
-  MESSAGE(FATAL_ERROR "PDO_MEMORY_CONFIG not defined")
+SET (WW_STACK_SIZE ${ENCLAVE_WORKER_STACK})
+SET (WW_HEAP_SIZE ${ENCLAVE_WORKER_HEAP})
+
+# MEM_POOL_SIZE determined from the stack and heap size plus padding, padding
+# factor is just a multiplier that can be adjusted to increase the padding
+MATH(EXPR WW_RUNTIME_MEM_POOL_SIZE "${WW_STACK_SIZE} + ${WW_HEAP_SIZE}")
+
+# Check that the runtime memory pool size is not larger than the enclave heap size
+IF (WW_RUNTIME_MEM_POOL_SIZE GREATER ENCLAVE_HEAP_SIZE)
+  MESSAGE(FATAL_ERROR "Invalid memory size; RUNTIME_MEM_POOL_SIZE too big for the enclave heap size")
 ENDIF()
 
-IF (${PDO_MEMORY_CONFIG} STREQUAL "SMALL")
-  MATH(EXPR WW_RUNTIME_MEM_POOL_SIZE "4 * 1024 * 1024")
-  MATH(EXPR WW_STACK_SIZE "512 * 1024")
-  MATH(EXPR WW_HEAP_SIZE "3 * 1024 * 1024")
-ELSEIF (${PDO_MEMORY_CONFIG} STREQUAL "MEDIUM")
-  MATH(EXPR WW_RUNTIME_MEM_POOL_SIZE "8 * 1024 * 1024")
-  MATH(EXPR WW_STACK_SIZE "512 * 1024")
-  MATH(EXPR WW_HEAP_SIZE "7 * 1024 * 1024")
-ELSEIF (${PDO_MEMORY_CONFIG} STREQUAL "LARGE")
-  MATH(EXPR WW_RUNTIME_MEM_POOL_SIZE "16 * 1024 * 1024")
-  MATH(EXPR WW_STACK_SIZE "512 * 1024")
-  MATH(EXPR WW_HEAP_SIZE "15 * 1024 * 1024")
-ELSE()
-  MESSAGE(FATAL_ERROR "Invalid memory size; ${PDO_MEMORY_CONFIG}")
-ENDIF()
-
-TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE RUNTIME_MEM_POOL_SIZE=${WW_RUNTIME_MEM_POOL_SIZE})
-TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE HEAP_SIZE=${WW_HEAP_SIZE})
-TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE STACK_SIZE=${WW_STACK_SIZE})
+TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE MAXIMUM_SIZE=${CONTRACT_MAXIMUM_SIZE})
+TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE GLOBAL_HEAP_SIZE=${CONTRACT_GLOBAL_HEAP_SIZE})
+TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE HEAP_SIZE=${CONTRACT_HEAP_SIZE})
+TARGET_COMPILE_DEFINITIONS(${WAWAKA_STATIC_NAME} PRIVATE STACK_SIZE=${CONTRACT_STACK_SIZE})
 
 TARGET_INCLUDE_DIRECTORIES(${WAWAKA_STATIC_NAME} PRIVATE ${INTERPRETER_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(${WAWAKA_STATIC_NAME} PRIVATE ${IWASM_DIR}/include)
