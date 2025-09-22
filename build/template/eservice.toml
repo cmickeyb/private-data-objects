@@ -22,10 +22,10 @@ HttpPort = ${{7100+_count_}}
 Host = "${host}"
 
 # Max number of threads for processing WSGI requests
-WorkerThreads = 8
+WorkerThreads = 4
 
 # Suggested number of threads for processing other requests
-ReactorThreads = 8
+ReactorThreads = 4
 
 # --------------------------------------------------
 # StorageService -- information about KV block stores
@@ -79,7 +79,7 @@ BaseName = "${identity}"
 [EnclaveModule]
 
 # Number of available enclave workers to service requests
-NumberOfEnclaves = '7'
+NumberOfEnclaves = '2'
 
 # ias_url is the URL of the Intel Attestation Service (IAS) server.  The
 # example server is for debug enclaves only,
@@ -88,4 +88,3 @@ ias_url = 'https://api.trustedservices.intel.com/sgx/dev'
 
 # sgx key root folder configuration
 sgx_key_root = "${sgx_key_root}"
-

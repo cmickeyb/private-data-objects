@@ -21,29 +21,13 @@ IF (NOT DEFINED ENV{PDO_SGX_KEY_ROOT})
 ENDIF()
 SET(PDO_SGX_KEY_ROOT "$ENV{PDO_SGX_KEY_ROOT}")
 
-# Memory size should be set in ProjectVariables.cmake which must be included
+# Memory size should be set in Memory.cmake which must be included
 # before this file. There are three values for memory size: SMALL, MEDIUM
 # and LARGE. Each provides defaults for memory allocation. See the note
-# about memory size in ProjectVariables.cmake regarding dependencies between
+# about memory size in Memory.cmake regarding dependencies between
 # memory settings here and in other parts of PDO.
 IF (NOT DEFINED PDO_MEMORY_CONFIG)
   MESSAGE(FATAL_ERROR "PDO_MEMORY_CONFIG not defined")
-ENDIF()
-
-IF (${PDO_MEMORY_CONFIG} STREQUAL "SMALL")
-  MATH(EXPR ENCLAVE_STACK_SIZE "2 * 1024 * 1024")
-  MATH(EXPR ENCLAVE_HEAP_SIZE "32 * 1024 * 1024")
-  MATH(EXPR ENCLAVE_RESERVED_SIZE "1 * 1024 * 1024")
-ELSEIF (${PDO_MEMORY_CONFIG} STREQUAL "MEDIUM")
-  MATH(EXPR ENCLAVE_STACK_SIZE "2 * 1024 * 1024")
-  MATH(EXPR ENCLAVE_HEAP_SIZE "64 * 1024 * 1024")
-  MATH(EXPR ENCLAVE_RESERVED_SIZE "2 * 1024 * 1024")
-ELSEIF (${PDO_MEMORY_CONFIG} STREQUAL "LARGE")
-  MATH(EXPR ENCLAVE_STACK_SIZE "2 * 1024 * 1024")
-  MATH(EXPR ENCLAVE_HEAP_SIZE "128 * 1024 * 1024")
-  MATH(EXPR ENCLAVE_RESERVED_SIZE "4 * 1024 * 1024")
-ELSE()
-  MESSAGE(FATAL_ERROR "Invalid memory size; ${PDO_MEMORY_CONFIG}")
 ENDIF()
 
 # There are effectively three build modes for SGX:
