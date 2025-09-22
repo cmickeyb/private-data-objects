@@ -1206,13 +1206,15 @@ static int json_serialize_to_buffer_r(const JSON_Value *value, char *buf, int le
             return written_total;
         case JSONNumber:
             num = json_value_get_number(value);
-            written = snprintf(num_buf, sizeof(num_buf), PARSON_DEFAULT_FLOAT_FORMAT, num);
+            written = snprintf(num_buf, sizeof(num_buf) - 1, PARSON_DEFAULT_FLOAT_FORMAT, num);
             if (written <= 0) {
                 return -1;
             }
             if (buf != NULL) {
                 // no need to update buf pointer since we are just returning the value
                 memcpy(buf, num_buf, written);
+                // written must be less than num_buf size - 1, so
+                // there should be space for the null terminator
                 buf[written] = '\0';
             }
             written_total += written;

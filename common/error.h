@@ -197,6 +197,8 @@ namespace pdo {
                 va_end(args);
                 throw ValueError(buffer);
             }
+
+            va_end(args);
         } // ThrowIfNull
 
         // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -219,6 +221,8 @@ namespace pdo {
                 va_end(args);
                 throw except(buffer);
             }
+
+            va_end(args);
         } // ThrowIf
 
         // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
