@@ -39,6 +39,15 @@ IF (BUILD_TRUSTED OR BUILD_UNTRUSTED)
   INCLUDE(SGX)
 ENDIF()
 
+# Memory size should be set in ProjectVariables.cmake which must be included
+# before this file. There are three values for memory size: SMALL, MEDIUM
+# and LARGE. Each provides defaults for memory allocation. See the note
+# about memory size in ProjectVariables.cmake regarding dependencies between
+# memory settings here and in other parts of PDO.
+IF (NOT DEFINED PDO_MEMORY_CONFIG)
+  MESSAGE(FATAL_ERROR "PDO_MEMORY_CONFIG not defined")
+ENDIF()
+
 ################################################################################
 # Common components for both trusted and untrusted common libraries
 ################################################################################
@@ -81,6 +90,8 @@ IF (BUILD_CLIENT)
 
   TARGET_COMPILE_OPTIONS(${C_COMMON_LIB_NAME} PRIVATE ${OPENSSL_CFLAGS})
 
+  TARGET_COMPILE_DEFINITIONS(${C_COMMON_LIB_NAME} PRIVATE "STATE_DATA_BLOCK_SIZE=${STATE_DATA_BLOCK_SIZE}")
+  TARGET_COMPILE_DEFINITIONS(${C_COMMON_LIB_NAME} PRIVATE "STATE_CACHE_SIZE=${STATE_CACHE_SIZE}")
   TARGET_COMPILE_DEFINITIONS(${C_COMMON_LIB_NAME} PRIVATE "_UNTRUSTED_=1")
   TARGET_COMPILE_DEFINITIONS(${C_COMMON_LIB_NAME} PRIVATE "_CLIENT_ONLY_=1")
 ENDIF()
@@ -96,6 +107,8 @@ IF (BUILD_UNTRUSTED)
   ADD_LIBRARY(${U_COMMON_LIB_NAME} STATIC ${PROJECT_HEADERS} ${PROJECT_SOURCES})
   SGX_PREPARE_UNTRUSTED(${U_COMMON_LIB_NAME})
 
+  TARGET_COMPILE_DEFINITIONS(${U_COMMON_LIB_NAME} PRIVATE "STATE_DATA_BLOCK_SIZE=${STATE_DATA_BLOCK_SIZE}")
+  TARGET_COMPILE_DEFINITIONS(${U_COMMON_LIB_NAME} PRIVATE "STATE_CACHE_SIZE=${STATE_CACHE_SIZE}")
   TARGET_COMPILE_DEFINITIONS(${U_COMMON_LIB_NAME} PRIVATE "_UNTRUSTED_=1")
 ENDIF()
 
@@ -107,6 +120,9 @@ IF (BUILD_TRUSTED)
 
   ADD_LIBRARY(${T_COMMON_LIB_NAME} STATIC ${PROJECT_HEADERS} ${PROJECT_SOURCES})
   SGX_PREPARE_TRUSTED(${T_COMMON_LIB_NAME})
+
+  TARGET_COMPILE_DEFINITIONS(${T_COMMON_LIB_NAME} PRIVATE "STATE_DATA_BLOCK_SIZE=${STATE_DATA_BLOCK_SIZE}")
+  TARGET_COMPILE_DEFINITIONS(${T_COMMON_LIB_NAME} PRIVATE "STATE_CACHE_SIZE=${STATE_CACHE_SIZE}")
 ENDIF()
 
 ################################################################################

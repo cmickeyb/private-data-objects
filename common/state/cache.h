@@ -18,7 +18,7 @@
 #include <map>
 #include <queue>
 
-#define CACHE_SIZE (1 << 22)                 // 4 MB
+#define CACHE_SIZE STATE_CACHE_SIZE
 
 namespace pdo
 {

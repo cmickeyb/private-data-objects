@@ -15,7 +15,7 @@
 
 #pragma once
 
-#define FIXED_DATA_NODE_BYTE_SIZE (1 << 13)  // 8 KB
+#define FIXED_DATA_NODE_BYTE_SIZE STATE_DATA_BLOCK_SIZE
 
 namespace pdo
 {
