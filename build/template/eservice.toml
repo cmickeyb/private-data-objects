@@ -79,7 +79,7 @@ BaseName = "${identity}"
 [EnclaveModule]
 
 # Number of available enclave workers to service requests
-NumberOfEnclaves = '2'
+NumberOfEnclaves = '1'
 
 # ias_url is the URL of the Intel Attestation Service (IAS) server.  The
 # example server is for debug enclaves only,
