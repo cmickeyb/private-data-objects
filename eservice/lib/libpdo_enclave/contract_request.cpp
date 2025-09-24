@@ -67,12 +67,12 @@ public:
             finalized_ = true;
         }
         return true;
-    };
+    }
 
     ~StateFinalizer()
     {
         Finalize();
-    };
+    }
 };
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
