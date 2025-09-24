@@ -59,8 +59,10 @@ void pstate::data_node_io::init_append_data_node()
 
 void pstate::data_node_io::add_and_init_append_data_node()
 {
-    pdo::error::ThrowIf<pdo::error::RuntimeError>(append_dn_->free_bytes() == data_node::data_end_index() - data_node::data_begin_index(),
-        "appending new data node after empty one");
+    pdo::error::ThrowIf<pdo::error::RuntimeError>(
+        append_dn_->free_bytes() == data_node::data_end_index() - data_node::data_begin_index(),
+        "appending new data node after empty one; %u bytes in block %u",
+        append_dn_->free_bytes(), append_dn_->get_block_num());
 
     unsigned int append_data_node_block_num = block_warehouse_.get_last_block_num();
 

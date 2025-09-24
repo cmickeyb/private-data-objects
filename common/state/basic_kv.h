@@ -23,9 +23,6 @@ namespace state
 {
     class Basic_KV
     {
-    protected:
-        void* handle;
-
     public:
         virtual ~Basic_KV() {}
         virtual void Finalize(ByteArray& id) = 0;

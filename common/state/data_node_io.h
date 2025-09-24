@@ -28,7 +28,9 @@ namespace state
         data_node* append_dn_;
         Cache cache_;
 
-        data_node_io(const ByteArray& key) : block_warehouse_(key), cache_(block_warehouse_) {}
+        data_node_io(const ByteArray& key) :
+            block_warehouse_(key), cache_(block_warehouse_)  { append_dn_ = nullptr; }
+
         void initialize(pdo::state::StateNode& node);
 
         void init_append_data_node();
