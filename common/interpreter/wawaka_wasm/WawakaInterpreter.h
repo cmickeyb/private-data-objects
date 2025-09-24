@@ -51,6 +51,8 @@ private:
     wasm_module_inst_t wasm_module_inst_ = NULL;
     wasm_exec_env_t wasm_exec_env_ = NULL;
 
+    bool close_kv_store(void);
+
     void parse_response_string(
         int32 response_app,
         std::string& outResult,

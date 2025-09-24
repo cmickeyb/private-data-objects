@@ -81,14 +81,14 @@ extern "C" bool key_value_set_wrapper(
         if (state == NULL)
             return false;
 
-        if (key_buffer == NULL)
+        if (key_buffer == NULL || key_buffer_length == 0)
             return false;
 
         if (val_buffer == NULL)
             return false;
 
-        ByteArray ba_key(key_buffer, key_buffer + key_buffer_length);
-        ByteArray ba_val(val_buffer, val_buffer + val_buffer_length);
+        const ByteArray ba_key(key_buffer, key_buffer + key_buffer_length);
+        const ByteArray ba_val(val_buffer, val_buffer + val_buffer_length);
 
         state->UnprivilegedPut(ba_key, ba_val);
         return true;
@@ -120,10 +120,10 @@ extern "C" bool key_value_get_wrapper(
         if (state == NULL)
             return false;
 
-        if (key_buffer == NULL)
+        if (key_buffer == NULL || key_buffer_length == 0)
             return false;
 
-        ByteArray ba_key(key_buffer, key_buffer + key_buffer_length);
+        const ByteArray ba_key(key_buffer, key_buffer + key_buffer_length);
         ByteArray ba_val = state->UnprivilegedGet(ba_key);
 
         if (ba_val.size() == 0)
@@ -162,10 +162,10 @@ extern "C" bool privileged_key_value_get_wrapper(
         if (state == NULL)
             return false;
 
-        if (key_buffer == NULL)
+        if (key_buffer == NULL || key_buffer_length == 0)
             return false;
 
-        ByteArray ba_key(key_buffer, key_buffer + key_buffer_length);
+        const ByteArray ba_key(key_buffer, key_buffer + key_buffer_length);
         ByteArray ba_val = state->PrivilegedGet(ba_key);
 
         if (ba_val.size() == 0)
@@ -206,7 +206,7 @@ extern "C" int32 key_value_create_wrapper(
             return false;
         }
 
-        ByteArray ba_encryption_key(aes_key_buffer, aes_key_buffer + aes_key_buffer_length);
+        const ByteArray ba_encryption_key(aes_key_buffer, aes_key_buffer + aes_key_buffer_length);
 
         // find an empty slot we can use for the kv store
         pstate::Basic_KV_Plus** kv_store_pool = (pstate::Basic_KV_Plus**)wasm_runtime_get_custom_data(module_inst);
@@ -258,7 +258,7 @@ extern "C" int32 key_value_open_wrapper(
         if (id_hash_buffer == NULL || id_hash_buffer_length <= 0)
             return false;
 
-        ByteArray ba_id_hash(id_hash_buffer, id_hash_buffer + id_hash_buffer_length);
+        const ByteArray ba_id_hash(id_hash_buffer, id_hash_buffer + id_hash_buffer_length);
 
         if (aes_key_buffer == NULL || aes_key_buffer_length != pdo::crypto::constants::SYM_KEY_LEN)
         {
@@ -266,7 +266,7 @@ extern "C" int32 key_value_open_wrapper(
             return false;
         }
 
-        ByteArray ba_encryption_key(aes_key_buffer, aes_key_buffer + aes_key_buffer_length);
+        const ByteArray ba_encryption_key(aes_key_buffer, aes_key_buffer + aes_key_buffer_length);
 
         // find an empty slot we can use for the kv store
         pstate::Basic_KV_Plus** kv_store_pool = (pstate::Basic_KV_Plus**)wasm_runtime_get_custom_data(module_inst);
@@ -325,6 +325,7 @@ extern "C" bool key_value_finalize_wrapper(
         // Call finalize and cross your fingers
         ByteArray ba_val;
 
+        SAFE_LOG(PDO_LOG_INFO, "finalizing key/value store");
         state->Finalize(ba_val);
         if (ba_val.size() == 0)
         {

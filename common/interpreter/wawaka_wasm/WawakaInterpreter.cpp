@@ -87,6 +87,36 @@ int wasm_printer(const char *msg)
 extern bool InitializeNativeSymbols(RuntimeInitArgs& init_args);
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+bool WawakaInterpreter::close_kv_store(void)
+{
+    bool result = true;
+    ByteArray statehash;
+
+    for (size_t i = 1; i < kv_store_pool_.size(); i++)
+    {
+        if (kv_store_pool_[i] == NULL)
+            continue;
+
+        result = false;
+
+        SAFE_LOG(PDO_LOG_WARNING, "kv_store_pool_ slot not finalized: %u", i);
+        try {
+            kv_store_pool_[i]->Finalize(statehash);
+            delete kv_store_pool_[i];
+            kv_store_pool_[i] = NULL;
+        }
+        catch (std::exception& e)
+        {
+            // Only log the exception here
+            SAFE_LOG(PDO_LOG_ERROR, "Exception occured while finalizing outstanding state pool: %s", e.what());
+        }
+    }
+
+    // returns false if there were any outstanding kv stores
+    return result;
+}
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void WawakaInterpreter::parse_response_string(
     int32 response_app,
     std::string& outResponse,
@@ -403,12 +433,8 @@ void WawakaInterpreter::create_initial_contract_state(
     std::map<std::string,std::string> outDependencies;
     parse_response_string(response_app, outMessageResult, outStateChangedFlag, outDependencies);
 
-    // We could throw an exception if the store is not finalized
-    // or we could just finalize and throw away the block id, which
-    // effectively loses access to the kv store, seems like throwing
-    // an exception is the right idea
-    for (size_t i = 1; i < kv_store_pool_.size(); i++)
-        pe::ThrowIf<pe::RuntimeError>(kv_store_pool_[i] != NULL, "failed to close contract KV store");
+    // for the moment, not closing the kv store is bad practice but not an error
+    (void) close_kv_store();
 
     // this should be in finally... later...
     wasm_runtime_set_custom_data(wasm_module_inst_, NULL);
@@ -443,12 +469,8 @@ void WawakaInterpreter::send_message_to_contract(
     int32 response_app = evaluate_function(inMessage.Message, env);
     parse_response_string(response_app, outMessageResult, outStateChangedFlag, outDependencies);
 
-    // We could throw an exception if the store is not finalized
-    // or we could just finalize and throw away the block id, which
-    // effectively loses access to the kv store, seems like throwing
-    // an exception is the right idea
-    for (size_t i = 1; i < kv_store_pool_.size(); i++)
-        pe::ThrowIf<pe::RuntimeError>(kv_store_pool_[i] != NULL, "failed to close contract KV store");
+    // for the moment, not closing the kv store is bad practice but not an error
+    (void) close_kv_store();
 
     // this should be in finally... later...
     wasm_runtime_set_custom_data(wasm_module_inst_, NULL);
