@@ -50,7 +50,7 @@ private:
     bool finalized_ = false;
 
 public:
-    StateFinalizer(ContractState& contract_state) : contract_state_(contract_state) {};
+    StateFinalizer(ContractState& contract_state) : contract_state_(contract_state) {}
 
     bool Finalize(void)
     {
